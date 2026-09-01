@@ -40,20 +40,26 @@ For Exergism the intended pattern is:
 
 A versioned identifier MUST resolve to the semantic artifact for that version and MUST NOT later be repointed to different bytes while claiming to represent the same immutable release.
 
+Versioned resolver routes SHOULD use long-lived immutable cache directives once their published bytes and checksums have been fixed. Non-versioned current routes MAY use shorter caching and may advance only through an explicit release/publishing change.
+
 ## 5. No retroactive namespace rewriting
 
 Historical releases are not silently rewritten merely because Exergism Commons later adopts a better namespace. If a release was published with a different identifier scheme, migration is recorded in a subsequent release and compatibility mappings are published where appropriate.
 
-## 6. Dereferencing
+## 6. Dereferencing and content negotiation
 
-The service SHOULD provide a useful representation when an HTTP(S) identifier is dereferenced. Static hosting MAY initially return human-readable HTML. Future infrastructure MAY add standards-based content negotiation for RDF serializations without changing public identifiers.
+The service SHOULD provide a useful representation when an HTTP(S) identifier is dereferenced.
 
-When content negotiation is available, representations SHOULD include, as applicable:
+The native resolver in this repository performs server-side content negotiation from the HTTP `Accept` header. Negotiated resources MUST return `Vary: Accept`. A representation MUST advertise the media type of the bytes actually returned. Unsupported requested media types SHOULD return `406 Not Acceptable` rather than silently pretending that HTML is RDF.
+
+Representations MAY include, as applicable:
 
 - `text/html`
 - `text/turtle`
 - `application/rdf+xml`
 - `application/ld+json`
+
+A representation is not considered published merely because the resolver supports its MIME type. It becomes available only when the corresponding approved artifact is registered and deployed.
 
 ## 7. Hash vocabularies
 
@@ -61,9 +67,19 @@ Vocabulary terms MAY use hash IRIs, for example:
 
 `https://id.exergism.org/exergism#Autonomy`
 
-The fragment is client-side; the server resolves the namespace document at `https://id.exergism.org/exergism` (or its normalized trailing-slash route while static hosting is in use).
+The fragment is client-side; the HTTP request is made for the exact namespace document path:
 
-## 8. Governance
+`https://id.exergism.org/exergism`
+
+The production resolver SHOULD serve that exact path directly. A trailing-slash alias MAY redirect permanently to the canonical no-slash path, but infrastructure convenience MUST NOT redefine the persistent namespace.
+
+## 8. Resolver registry
+
+Resolver behavior SHOULD be declarative and reviewable. Registered routes define the canonical IRI, approved aliases, cache policy, representations, media types and artifact paths.
+
+Changing a resolver rule MUST NOT create new project semantics by itself. In particular, registering an RDF serialization for a project requires that the canonical project has already adopted and published the relevant ontology identifiers.
+
+## 9. Governance
 
 Cross-project rules for control and stewardship of the identifier service belong to Exergism Commons organization governance. Project-specific ontology semantics remain controlled by the project that owns the ontology.
 

@@ -1,0 +1,21 @@
+[Unit]
+Description=Exergism Commons persistent identifier resolver
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=idexergism
+Group=idexergism
+WorkingDirectory=/srv/id.exergism.org
+ExecStart=/usr/local/bin/idresolver -listen 127.0.0.1:8080 -root /srv/id.exergism.org -registry /srv/id.exergism.org/resolver/registry.json
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/srv/id.exergism.org
+
+[Install]
+WantedBy=multi-user.target
