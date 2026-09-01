@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exergism Commons Persistent Identifiers</title>
+  <meta name="description" content="Persistent identifier service for Exergism Commons semantic resources.">
+  <link rel="canonical" href="https://id.exergism.org/">
+  <link rel="alternate" type="application/ld+json" href="/representations/service.jsonld">
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+    body { max-width: 52rem; margin: 4rem auto; padding: 0 1.25rem; line-height: 1.6; }
+    code { overflow-wrap: anywhere; }
+    .status { padding: .75rem 1rem; border: 1px solid currentColor; border-radius: .5rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Exergism Commons Persistent Identifiers</h1>
+    <p><code>id.exergism.org</code> is the high-stability identifier surface for semantic resources published by Exergism Commons. Identifiers are intended to remain stable independently of repository layout, hosting provider, or user-facing websites.</p>
+
+    <p class="status"><strong>Status:</strong> infrastructure bootstrap. Namespace reservations do not by themselves change the canonical identifiers of an existing project release. A project adopts an identifier namespace only through an explicit, versioned project change.</p>
+
+    <h2>Reserved namespaces</h2>
+    <ul>
+      <li><a href="/exergism"><code>https://id.exergism.org/exergism#</code></a> — Exergism vocabulary namespace.</li>
+      <li><code>https://id.exergism.org/ecl#</code> — reserved for ECL pending an explicit migration decision.</li>
+    </ul>
+
+    <h2>Ontology identifiers</h2>
+    <ul>
+      <li><a href="/ontology/exergism"><code>https://id.exergism.org/ontology/exergism</code></a> — Exergism ontology identifier and release-resolution surface.</li>
+    </ul>
+
+    <h2>Persistence contract</h2>
+    <p>The rules governing allocation, immutability, redirects, namespace ownership and deprecation are documented in the repository's <a href="https://github.com/Exergism-Commons/id.exergism-commons.github.io/blob/main/PERSISTENCE.md">persistence policy</a>.</p>
+  </main>
+</body>
+</html>

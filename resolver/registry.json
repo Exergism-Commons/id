@@ -1,0 +1,48 @@
+{
+  "authority": "https://id.exergism.org/",
+  "routes": [
+    {
+      "path": "/",
+      "canonical": "https://id.exergism.org/",
+      "cache_control": "public, max-age=300",
+      "representations": [
+        {
+          "media_type": "text/html; charset=utf-8",
+          "file": "index.html",
+          "default": true
+        },
+        {
+          "media_type": "application/ld+json",
+          "file": "representations/service.jsonld",
+          "public_path": "/representations/service.jsonld"
+        }
+      ]
+    },
+    {
+      "path": "/exergism",
+      "aliases": ["/exergism/"],
+      "canonical": "https://id.exergism.org/exergism",
+      "cache_control": "public, max-age=300",
+      "representations": [
+        {
+          "media_type": "text/html; charset=utf-8",
+          "file": "exergism/index.html",
+          "default": true
+        }
+      ]
+    },
+    {
+      "path": "/ontology/exergism",
+      "aliases": ["/ontology/exergism/"],
+      "canonical": "https://id.exergism.org/ontology/exergism",
+      "cache_control": "public, max-age=300",
+      "representations": [
+        {
+          "media_type": "text/html; charset=utf-8",
+          "file": "ontology/exergism/index.html",
+          "default": true
+        }
+      ]
+    }
+  ]
+}

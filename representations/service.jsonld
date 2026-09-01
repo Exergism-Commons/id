@@ -1,0 +1,10 @@
+{
+  "@context": {
+    "dcterms": "http://purl.org/dc/terms/",
+    "foaf": "http://xmlns.com/foaf/0.1/"
+  },
+  "@id": "https://id.exergism.org/",
+  "@type": "foaf:Document",
+  "dcterms:title": "Exergism Commons Persistent Identifier Service",
+  "dcterms:identifier": "https://id.exergism.org/"
+}
