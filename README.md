@@ -54,20 +54,46 @@ A hardened [`systemd` unit](deploy/id-exergism.service) is included. No database
 
 ## Reserved identifier surfaces
 
-- Exergism vocabulary: `https://id.exergism.org/exergism#`
-- Exergism ontology: `https://id.exergism.org/ontology/exergism`
-- ECL vocabulary: `https://id.exergism.org/ecl#` (reserved only; not adopted by ECL unless ECL explicitly migrates)
+Project vocabularies:
+
+- Exergism: `https://id.exergism.org/exergism#`
+- ECL: `https://id.exergism.org/ecl#`
+- Funding governance: `https://id.exergism.org/funding#`
+
+Ontology IRIs:
+
+- `https://id.exergism.org/ontology/exergism`
+- `https://id.exergism.org/ontology/ecl`
+- `https://id.exergism.org/ontology/funding`
+
+Funding governance records:
+
+- `https://id.exergism.org/funding/id/{stableId}`
+
+A cross-project entity family is reserved for future specification:
+
+- `https://id.exergism.org/entity/...`
 
 See [`PERSISTENCE.md`](PERSISTENCE.md) before minting new identifiers.
 
+## Migration boundary
+
+`id.exergism.org` is now the intended persistent identifier authority for EC's semantic projects, but namespace adoption remains project-controlled:
+
+- Exergism must migrate from `http://www.exergia.org/ns/` through a new canonical release.
+- ECL must migrate from `urn:ecl:` through a new canonical release.
+- Funding should adopt the `id.exergism.org` namespace before its machine-readable governance layer receives its first canonical release.
+
+Historical versioned artifacts are not silently rewritten. Compatibility mappings are published where useful and semantically safe.
+
 ## Current publication boundary
 
-The Exergism namespace and ontology IRI are reserved here, but the current registry publishes only human-readable HTML for those routes. RDF serializations MUST NOT be registered until the canonical Exergism project adopts the new namespace in a versioned release.
+The resolver publishes only representations that have been approved by the canonical project repository. Reserving a route or namespace here does not make its RDF semantics operative.
 
-The service root additionally exposes a JSON-LD description of the identifier service itself. This does not change or pre-empt the Exergism ontology migration.
+The service root additionally exposes a JSON-LD description of the identifier service itself.
 
 ## Authority boundary
 
-This repository resolves identifiers. It does not become the canonical source of the philosophical corpus, ontology semantics, ECL legal artifacts, governance decisions, or future registry data merely because those resources use identifiers under this host.
+This repository resolves identifiers. It does not become the canonical source of the philosophical corpus, ontology semantics, ECL legal artifacts, funding-governance decisions or future registry data merely because those resources use identifiers under this host.
 
-Project-specific authority remains with the repository and release process that owns the relevant layer.
+Project-specific authority remains with the repository and release process that owns the relevant layer. Organization-level governance controls the persistence contract and stewardship of the identifier authority.
