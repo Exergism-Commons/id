@@ -16,7 +16,7 @@ func main() {
 	registry := flag.String("registry", "resolver/registry.json", "resolver registry file")
 	flag.Parse()
 
-	handler, err := resolver.Load(*root, *registry)
+	handler, err := resolver.LoadPublished(*root, *registry)
 	if err != nil {
 		log.Fatalf("load resolver: %v", err)
 	}
