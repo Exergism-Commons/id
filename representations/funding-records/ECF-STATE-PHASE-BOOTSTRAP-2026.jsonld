@@ -1,0 +1,10 @@
+{
+  "@context": "https://id.exergism.org/representations/funding-context.jsonld",
+  "@id": "https://id.exergism.org/funding/id/ECF-STATE-PHASE-BOOTSTRAP-2026",
+  "@type": "BootstrapState",
+  "id": "ECF-STATE-PHASE-BOOTSTRAP-2026",
+  "title": "Exergism Commons bootstrap funding phase",
+  "rationale": "EC is in its initial financing stage. High concentration may be temporarily unavoidable, but concentration safeguards, explicit dependency classification, diversification planning and enhanced approval remain applicable.",
+  "reviewDue": "2027-09-02",
+  "provenance": "strategy/anti-capture-policy.md#concentration-limits"
+}

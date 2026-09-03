@@ -1,10 +1,8 @@
 {
-  "@context": {
-    "dcterms": "http://purl.org/dc/terms/",
-    "foaf": "http://xmlns.com/foaf/0.1/"
-  },
-  "@id": "https://id.exergism.org/",
-  "@type": "foaf:Document",
-  "dcterms:title": "Exergism Commons Persistent Identifier Service",
-  "dcterms:identifier": "https://id.exergism.org/"
+  "@context": {"dcterms":"http://purl.org/dc/terms/","foaf":"http://xmlns.com/foaf/0.1/"},
+  "@id":"https://id.exergism.org/",
+  "@type":"foaf:Document",
+  "dcterms:title":"Exergism Commons Persistent Identifier Service",
+  "dcterms:identifier":"https://id.exergism.org/",
+  "dcterms:hasPart":[{"@id":"https://id.exergism.org/funding"},{"@id":"https://id.exergism.org/ontology/funding"},{"@id":"https://id.exergism.org/funding/id/ECF-STATE-PHASE-BOOTSTRAP-2026"},{"@id":"https://id.exergism.org/funding/id/ECF-DEC-MRG-BOOTSTRAP-001"},{"@id":"https://id.exergism.org/funding/id/ECF-OPP-NLNET-2026-09"},{"@id":"https://id.exergism.org/funding/id/ECF-OPP-COST-OPEN-CALL-2026"},{"@id":"https://id.exergism.org/funding/id/ECF-OPP-MSCA-PF-2027"},{"@id":"https://id.exergism.org/funding/id/ECF-OPP-DC-EDIC-ENGAGEMENT"}]
 }
