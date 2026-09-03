@@ -4,36 +4,36 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Exergism Commons Persistent Identifiers</title>
-  <meta name="description" content="Persistent identifier service for Exergism Commons semantic resources.">
+  <meta name="description" content="Persistent identifier authority for Exergism Commons semantic resources.">
   <link rel="canonical" href="https://id.exergism.org/">
   <link rel="alternate" type="application/ld+json" href="/representations/service.jsonld">
-  <style>
-    :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
-    body { max-width: 52rem; margin: 4rem auto; padding: 0 1.25rem; line-height: 1.6; }
-    code { overflow-wrap: anywhere; }
-    .status { padding: .75rem 1rem; border: 1px solid currentColor; border-radius: .5rem; }
-  </style>
+  <link rel="stylesheet" href="/assets/id.css">
 </head>
-<body>
-  <main>
-    <h1>Exergism Commons Persistent Identifiers</h1>
-    <p><code>id.exergism.org</code> is the high-stability identifier surface for semantic resources published by Exergism Commons. Identifiers are intended to remain stable independently of repository layout, hosting provider, or user-facing websites.</p>
+<body><main>
+  <p class="eyebrow">Exergism Commons · identifier authority</p>
+  <h1>Persistent identifiers that outlive the hosting.</h1>
+  <p class="lede"><code>id.exergism.org</code> is the high-stability semantic identifier surface for Exergism Commons. Repositories and websites remain authoritative for their own domains; this host provides persistent public identity and dereferencing.</p>
 
-    <p class="status"><strong>Status:</strong> infrastructure bootstrap. Namespace reservations do not by themselves change the canonical identifiers of an existing project release. A project adopts an identifier namespace only through an explicit, versioned project change.</p>
+  <div class="panel status"><strong>Current publication state.</strong> Funding adopted the Exergism Commons identifier authority in its merged machine-readable governance layer on 2 September 2026. Governance's <code>commons#</code> architecture remains proposed in draft PR #1 and is not presented here as operative.</div>
 
-    <h2>Reserved namespaces</h2>
-    <ul>
-      <li><a href="/exergism"><code>https://id.exergism.org/exergism#</code></a> — Exergism vocabulary namespace.</li>
-      <li><code>https://id.exergism.org/ecl#</code> — reserved for ECL pending an explicit migration decision.</li>
-    </ul>
+  <h2>Adopted and resolvable surfaces</h2>
+  <div class="grid">
+    <section class="panel"><h3>Funding governance</h3><p><a href="/funding"><code>https://id.exergism.org/funding#</code></a></p><p>Human vocabulary index for funding, treasury, compensation and Endowment governance.</p></section>
+    <section class="panel"><h3>Funding ontology</h3><p><a href="/ontology/funding"><code>https://id.exergism.org/ontology/funding</code></a></p><p>HTML for humans and Turtle through content negotiation in the native resolver.</p></section>
+    <section class="panel"><h3>Funding records</h3><p><a href="/funding/id/"><code>https://id.exergism.org/funding/id/{stableId}</code></a></p><p>Canonical funding governance records and derived opportunity records currently minted by the Funding repository.</p></section>
+  </div>
 
-    <h2>Ontology identifiers</h2>
-    <ul>
-      <li><a href="/ontology/exergism"><code>https://id.exergism.org/ontology/exergism</code></a> — Exergism ontology identifier and release-resolution surface.</li>
-    </ul>
+  <h2>Migration / reserved surfaces</h2>
+  <ul>
+    <li><a href="/exergism"><code>https://id.exergism.org/exergism#</code></a> — reserved resolution surface; canonical Exergism migration remains project-controlled.</li>
+    <li><code>https://id.exergism.org/ecl#</code> — reserved pending ECL's explicit release migration.</li>
+    <li><code>https://id.exergism.org/commons#</code> and <code>https://id.exergism.org/ontology/commons</code> — proposed by <a href="https://github.com/Exergism-Commons/governance/pull/1">Governance PR #1</a>; intentionally not registered as an adopted semantic surface while that architecture remains draft/non-operative.</li>
+    <li><code>https://id.exergism.org/entity/...</code> — reserved for a separately specified cross-project entity layer.</li>
+  </ul>
 
-    <h2>Persistence contract</h2>
-    <p>The rules governing allocation, immutability, redirects, namespace ownership and deprecation are documented in the repository's <a href="https://github.com/Exergism-Commons/id.exergism-commons.github.io/blob/main/PERSISTENCE.md">persistence policy</a>.</p>
-  </main>
-</body>
-</html>
+  <h2>Where the authority lives</h2>
+  <p>Funding semantics and governance records remain authoritative in <a href="https://github.com/Exergism-Commons/funding">Exergism-Commons/funding</a>. The operational funding website is <a href="https://funding.exergism.org/">funding.exergism.org</a>. This resolver must not manufacture policy, approval or legal authority merely because it can dereference an identifier.</p>
+
+  <h2>Persistence contract</h2>
+  <p>Allocation, immutability, redirects, authority boundaries and deprecation are defined in the repository's <a href="https://github.com/Exergism-Commons/id.exergism-commons.github.io/blob/main/PERSISTENCE.md">persistence policy</a>.</p>
+</main></body></html>

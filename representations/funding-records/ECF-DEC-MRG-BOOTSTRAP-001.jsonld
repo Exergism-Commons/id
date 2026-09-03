@@ -1,0 +1,12 @@
+{
+  "@context": "https://id.exergism.org/representations/funding-context.jsonld",
+  "@id": "https://id.exergism.org/funding/id/ECF-DEC-MRG-BOOTSTRAP-001",
+  "@type": "GovernanceDecision",
+  "id": "ECF-DEC-MRG-BOOTSTRAP-001",
+  "title": "Bootstrap machine-readable funding governance",
+  "status": "proposed",
+  "decisionDate": "2026-09-02",
+  "approvalClass": "ordinary",
+  "rationale": "Introduce an auditable OWL + JSON-LD + SHACL governance layer for funding, treasury, compensation and Endowment records without delegating institutional authority to code.",
+  "provenance": "spec/MACHINE-READABLE-GOVERNANCE.md; machine-readable-governance branch"
+}
