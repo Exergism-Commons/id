@@ -1,0 +1,15 @@
+{
+  "project": "funding",
+  "authority": "Exergism-Commons/funding",
+  "source_commit": "d9d8e79e70b441f3172082868c042c6993dd4d2a",
+  "vocabulary_namespace": "https://id.exergism.org/funding#",
+  "ontology_iri": "https://id.exergism.org/ontology/funding",
+  "records": [
+    "https://id.exergism.org/funding/id/ECF-STATE-PHASE-BOOTSTRAP-2026",
+    "https://id.exergism.org/funding/id/ECF-DEC-MRG-BOOTSTRAP-001",
+    "https://id.exergism.org/funding/id/ECF-OPP-NLNET-2026-09",
+    "https://id.exergism.org/funding/id/ECF-OPP-COST-OPEN-CALL-2026",
+    "https://id.exergism.org/funding/id/ECF-OPP-MSCA-PF-2027",
+    "https://id.exergism.org/funding/id/ECF-OPP-DC-EDIC-ENGAGEMENT"
+  ]
+}
