@@ -3,7 +3,7 @@
 
   const NS = "https://id.exergism.org/funding#";
   const ONTOLOGY_IRI = "https://id.exergism.org/ontology/funding";
-  const TTL_FETCH_URL = "/ontology/funding";
+  const TTL_FETCH_URL = "/representations/funding.owl.ttl";
   const TTL_PUBLIC_URL = "/representations/funding.owl.ttl";
   const CONTEXT_URL = "/representations/funding-context.jsonld";
   const SOURCE_URL = "https://github.com/Exergism-Commons/funding/blob/main/ontology/funding.owl.ttl";
