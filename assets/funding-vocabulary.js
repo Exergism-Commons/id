@@ -3,7 +3,8 @@
 
   const NS = "https://id.exergism.org/funding#";
   const ONTOLOGY_IRI = "https://id.exergism.org/ontology/funding";
-  const TTL_URL = "/representations/funding.owl.ttl";
+  const TTL_FETCH_URL = "/ontology/funding";
+  const TTL_PUBLIC_URL = "/representations/funding.owl.ttl";
   const CONTEXT_URL = "/representations/funding-context.jsonld";
   const SOURCE_URL = "https://github.com/Exergism-Commons/funding/blob/main/ontology/funding.owl.ttl";
 
@@ -111,7 +112,7 @@
 
     semanticRows += row("Description", description)
       + row("Defined by", `<a href="/ontology/funding"><code>${escapeHtml(ONTOLOGY_IRI)}</code></a>`)
-      + row("Machine representations", `<a href="${TTL_URL}">Turtle</a> · <a href="${CONTEXT_URL}">JSON-LD context</a>`)
+      + row("Machine data", `<a href="${TTL_PUBLIC_URL}">Turtle ontology snapshot</a> · <a href="${CONTEXT_URL}">JSON-LD context</a>`)
       + row("Source", `<a href="${SOURCE_URL}">Exergism-Commons/funding</a>`);
 
     detail.innerHTML = `
@@ -134,7 +135,7 @@
     overview.hidden = true;
     detail.hidden = false;
     detail.innerHTML = `<div class="panel"><strong>Unknown Funding vocabulary term.</strong><p><code>${escapeHtml(NS + name)}</code> is not declared by the currently published Funding ontology snapshot.</p><p><a href="/funding">Return to the vocabulary index</a>.</p></div>`;
-    document.title = `Unknown term · Funding vocabulary · Exergism Commons`;
+    document.title = "Unknown term · Funding vocabulary · Exergism Commons";
   }
 
   function renderOverview() {
@@ -145,7 +146,7 @@
 
   async function start() {
     try {
-      const response = await fetch(TTL_URL, { headers: { Accept: "text/turtle" } });
+      const response = await fetch(TTL_FETCH_URL, { headers: { Accept: "text/turtle" } });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const terms = parseOntology(await response.text());
 
