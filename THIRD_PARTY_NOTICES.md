@@ -9,7 +9,7 @@ The `idresolver` Go code currently imports only the Go standard library plus thi
 ### Go
 
 - Build/runtime component: Go toolchain, runtime and standard library.
-- Current stable release reviewed: **Go 1.26.8**.
+- Current stable release reviewed and verified in CI: **Go 1.27.1**.
 - Deployment policy: the DigitalOcean bootstrap resolves the current stable release from `go.dev` at install time and verifies the official SHA-256 before installation.
 - Licence: BSD-style Go licence.
 - Required redistribution text: `LICENSES/Go.txt`.
