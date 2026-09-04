@@ -85,8 +85,8 @@ resolve_stable_go() {
   minor="${major#*.}"
   major="${major%%.*}"
   minor="${minor%%.*}"
-  if (( major < 1 || (major == 1 && minor < 26) )); then
-    die "Resolved Go version ${version} is older than the repository minimum Go 1.26."
+  if (( major < 1 || (major == 1 && minor < 27) )); then
+    die "Resolved Go version ${version} is older than the repository minimum Go 1.27."
   fi
 
   printf '%s\n' "$version"
