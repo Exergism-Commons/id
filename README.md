@@ -40,9 +40,17 @@ curl -i -H 'Accept: text/turtle' http://127.0.0.1:8080/exergism
 
 The last request intentionally returns `406` until an Exergism Turtle representation using the adopted namespace has actually been published.
 
+## Build and dependency policy
+
+The resolver intentionally has no external Go module dependencies: it uses the Go standard library plus repository-local code only.
+
+The module now targets the current stable Go language line (`go 1.26.0`). CI and the DigitalOcean bootstrap use the current stable Go toolchain rather than an old pinned patch release. GitHub Actions are pinned to reviewed release commits and Dependabot watches the workflow dependencies for stable updates.
+
+See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for the reviewed redistribution surface.
+
 ## Minimal VPS deployment
 
-A 512 MB Debian VPS is sufficient for this service. The intended deployment is:
+A 512 MB VPS is sufficient for this service. For new DigitalOcean deployments, prefer a current stable/LTS image such as Ubuntu 26.04 LTS or Debian 13. The intended deployment is:
 
 ```text
 Internet -> TLS frontend -> idresolver (127.0.0.1:8080) -> versioned/static representations
@@ -50,7 +58,7 @@ Internet -> TLS frontend -> idresolver (127.0.0.1:8080) -> versioned/static repr
 
 [`deploy/Caddyfile`](deploy/Caddyfile) is deliberately tiny: Caddy terminates HTTPS and proxies bytes. All semantic routing and MIME negotiation belongs to `idresolver`.
 
-A hardened [`systemd` unit](deploy/id-exergism.service) is included. No database, Docker runtime, Java service, or application framework is required.
+A hardened [`systemd` unit](deploy/id-exergism.service) and a one-shot [`deploy/setup-digitalocean.sh`](deploy/setup-digitalocean.sh) bootstrap are included. No database, Docker runtime, Java service, or application framework is required.
 
 ## Reserved identifier surfaces
 
@@ -97,3 +105,9 @@ The service root additionally exposes a JSON-LD description of the identifier se
 This repository resolves identifiers. It does not become the canonical source of the philosophical corpus, ontology semantics, ECL legal artifacts, funding-governance decisions or future registry data merely because those resources use identifiers under this host.
 
 Project-specific authority remains with the repository and release process that owns the relevant layer. Organization-level governance controls the persistence contract and stewardship of the identifier authority.
+
+## Terms and redistribution
+
+A short-form resolver EULA is available at [`EULA.md`](EULA.md). It does not override third-party licences or project-specific terms. Third-party and redistribution notices are recorded in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md), with required licence texts under [`LICENSES/`](LICENSES/).
+
+The current Funding source repository has no explicit root `LICENSE` file. That does not prevent EC from operating its own resolver, but it should be resolved before presenting Funding ontology/record content as generally redistributable to third parties.
