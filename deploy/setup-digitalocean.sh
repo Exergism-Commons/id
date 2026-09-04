@@ -3,7 +3,9 @@ set -Eeuo pipefail
 
 # Exergism Commons — id.exergism.org DigitalOcean Droplet bootstrap
 #
-# Target: fresh Debian/Ubuntu Droplet, run as root.
+# Target: fresh Ubuntu 26.04 LTS or Debian 13 Droplet, run as root.
+# Other currently supported Debian/Ubuntu releases may work, but production
+# deployments should use a currently supported stable/LTS image.
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/Exergism-Commons/id.exergism-commons.github.io/main/deploy/setup-digitalocean.sh | sudo bash
@@ -32,6 +34,7 @@ ENABLE_UFW="${ENABLE_UFW:-1}"
 SERVICE_NAME="id-exergism"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 CADDY_FILE="/etc/caddy/Caddyfile"
+DOC_DIR="/usr/local/share/doc/idresolver"
 
 log()  { printf '\n\033[1;34m==>\033[0m %s\n' "$*"; }
 warn() { printf '\n\033[1;33mWARN:\033[0m %s\n' "$*" >&2; }
@@ -56,8 +59,11 @@ esac
 
 export DEBIAN_FRONTEND=noninteractive
 
-log "Installing base packages"
+log "Updating operating-system packages"
 apt-get update
+apt-get upgrade -y
+
+log "Installing base packages"
 apt-get install -y --no-install-recommends \
   ca-certificates \
   curl \
@@ -66,26 +72,28 @@ apt-get install -y --no-install-recommends \
   apt-transport-https \
   git \
   gnupg \
+  jq \
   ufw
 
 resolve_stable_go() {
-  local version major minor
-  version="$(curl -fsSL https://go.dev/VERSION?m=text | head -n1)"
+  local metadata version major minor
+  metadata="$(curl -fsSL 'https://go.dev/dl/?mode=json')"
+  version="$(jq -r '[.[] | select(.stable == true)][0].version // empty' <<<"$metadata")"
   [[ "$version" =~ ^go[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || die "Could not determine a valid stable Go version from go.dev."
 
   major="${version#go}"
   minor="${major#*.}"
   major="${major%%.*}"
   minor="${minor%%.*}"
-  if (( major < 1 || (major == 1 && minor < 22) )); then
-    die "Resolved Go version ${version} is older than the repository minimum Go 1.22."
+  if (( major < 1 || (major == 1 && minor < 26) )); then
+    die "Resolved Go version ${version} is older than the repository minimum Go 1.26."
   fi
 
   printf '%s\n' "$version"
 }
 
 install_go() {
-  local version="$1" arch go_arch tarball tmpdir
+  local version="$1" arch go_arch tarball checksum metadata tmpdir
   arch="$(dpkg --print-architecture)"
   case "$arch" in
     amd64) go_arch="amd64" ;;
@@ -94,8 +102,16 @@ install_go() {
   esac
 
   tarball="${version}.linux-${go_arch}.tar.gz"
+  metadata="$(curl -fsSL 'https://go.dev/dl/?mode=json&include=all')"
+  checksum="$(jq -r --arg version "$version" --arg filename "$tarball" '
+    [.[] | select(.version == $version) | .files[] | select(.filename == $filename)][0].sha256 // empty
+  ' <<<"$metadata")"
+  [[ "$checksum" =~ ^[0-9a-f]{64}$ ]] || die "Could not resolve the official SHA-256 for ${tarball}."
+
   tmpdir="$(mktemp -d)"
   curl -fsSL "https://go.dev/dl/${tarball}" -o "${tmpdir}/${tarball}"
+  printf '%s  %s\n' "$checksum" "${tmpdir}/${tarball}" | sha256sum -c - >/dev/null
+
   rm -rf /usr/local/go
   tar -C /usr/local -xzf "${tmpdir}/${tarball}"
   rm -rf "$tmpdir"
@@ -121,7 +137,9 @@ else
   install_go "$stable_go"
 fi
 
-log "Installing Caddy from the official repository"
+go version
+
+log "Installing latest Caddy stable from the official repository"
 install -d -m 0755 /usr/share/keyrings
 curl -fsSL https://dl.cloudsmith.io/public/caddy/stable/gpg.key \
   | gpg --dearmor --yes -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
@@ -129,6 +147,7 @@ curl -fsSL https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt \
   -o /etc/apt/sources.list.d/caddy-stable.list
 apt-get update
 apt-get install -y caddy
+caddy version
 
 log "Creating service account"
 if ! id "$APP_USER" >/dev/null 2>&1; then
@@ -162,6 +181,16 @@ go vet ./...
 go build -trimpath -ldflags='-s -w' -o /tmp/idresolver ./cmd/idresolver
 install -o root -g root -m 0755 /tmp/idresolver "$APP_BIN"
 rm -f /tmp/idresolver
+
+log "Installing redistribution and license notices"
+install -d -o root -g root -m 0755 "$DOC_DIR"
+for notice in EULA.md THIRD_PARTY_NOTICES.md LICENSES/Go.txt LICENSES/Apache-2.0.txt; do
+  if [[ -f "${APP_DIR}/${notice}" ]]; then
+    install -o root -g root -m 0644 "${APP_DIR}/${notice}" "${DOC_DIR}/$(basename "$notice")"
+  fi
+done
+git -C "$APP_DIR" rev-parse HEAD > "${DOC_DIR}/source-revision.txt"
+chmod 0644 "${DOC_DIR}/source-revision.txt"
 
 log "Installing systemd service"
 cat > "$SERVICE_FILE" <<EOF
@@ -228,12 +257,14 @@ curl -fsSI -H 'Accept: text/turtle' "http://${LISTEN_ADDR}/ontology/funding" >/d
 PUBLIC_IP="$(curl -4 -fsS --max-time 5 https://api.ipify.org || true)"
 
 printf '\n\033[1;32mSetup complete.\033[0m\n\n'
-printf 'Go:        %s\n' "$(go env GOVERSION)"
 printf 'Resolver:  http://%s (loopback only)\n' "$LISTEN_ADDR"
 printf 'Domain:    https://%s\n' "$DOMAIN"
+printf 'Go:        %s\n' "$(go env GOVERSION)"
+printf 'Caddy:     %s\n' "$(caddy version | head -n1)"
 printf 'Service:   systemctl status %s\n' "$SERVICE_NAME"
 printf 'Logs:      journalctl -u %s -f\n' "$SERVICE_NAME"
 printf 'Caddy:     systemctl status caddy\n'
+printf 'Notices:   %s\n' "$DOC_DIR"
 if [[ -n "$PUBLIC_IP" ]]; then
   printf '\nNext DNS step in Spaceship:\n'
   printf '  A    id    %s    TTL 300\n' "$PUBLIC_IP"
