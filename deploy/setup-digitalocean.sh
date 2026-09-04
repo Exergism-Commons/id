@@ -68,28 +68,30 @@ apt-get install -y --no-install-recommends \
   gnupg \
   ufw
 
+resolve_stable_go() {
+  local version major minor
+  version="$(curl -fsSL https://go.dev/VERSION?m=text | head -n1)"
+  [[ "$version" =~ ^go[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || die "Could not determine a valid stable Go version from go.dev."
+
+  major="${version#go}"
+  minor="${major#*.}"
+  major="${major%%.*}"
+  minor="${minor%%.*}"
+  if (( major < 1 || (major == 1 && minor < 22) )); then
+    die "Resolved Go version ${version} is older than the repository minimum Go 1.22."
+  fi
+
+  printf '%s\n' "$version"
+}
+
 install_go() {
-  local arch go_arch version tarball tmpdir
+  local version="$1" arch go_arch tarball tmpdir
   arch="$(dpkg --print-architecture)"
   case "$arch" in
     amd64) go_arch="amd64" ;;
     arm64) go_arch="arm64" ;;
     *) die "Unsupported CPU architecture for Go bootstrap: $arch" ;;
   esac
-
-  # Resolve the current stable Go release from go.dev. The repository requires
-  # Go >= 1.22; fail closed if the remote response is malformed.
-  version="$(curl -fsSL https://go.dev/VERSION?m=text | head -n1)"
-  [[ "$version" =~ ^go[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || die "Could not determine a valid stable Go version."
-
-  local major minor
-  major="${version#go}"
-  minor="${major#*.}"
-  major="${major%%.*}"
-  minor="${minor%%.*}"
-  if (( major < 1 || (major == 1 && minor < 22) )); then
-    die "Resolved Go version ${version} is older than required Go 1.22."
-  fi
 
   tarball="${version}.linux-${go_arch}.tar.gz"
   tmpdir="$(mktemp -d)"
@@ -101,17 +103,22 @@ install_go() {
   ln -sf /usr/local/go/bin/gofmt /usr/local/bin/gofmt
 }
 
+stable_go="$(resolve_stable_go)"
 if command -v go >/dev/null 2>&1; then
   current_go="$(go env GOVERSION 2>/dev/null || true)"
 else
   current_go=""
 fi
 
-if [[ ! "$current_go" =~ ^go1\.([0-9]+) ]] || (( BASH_REMATCH[1] < 22 )); then
-  log "Installing current stable Go toolchain"
-  install_go
+if [[ "$current_go" == "$stable_go" ]]; then
+  log "Using current stable Go toolchain: $current_go"
 else
-  log "Using existing Go toolchain: $current_go"
+  if [[ -n "$current_go" ]]; then
+    log "Replacing Go ${current_go} with current stable ${stable_go}"
+  else
+    log "Installing current stable Go toolchain: ${stable_go}"
+  fi
+  install_go "$stable_go"
 fi
 
 log "Installing Caddy from the official repository"
@@ -221,6 +228,7 @@ curl -fsSI -H 'Accept: text/turtle' "http://${LISTEN_ADDR}/ontology/funding" >/d
 PUBLIC_IP="$(curl -4 -fsS --max-time 5 https://api.ipify.org || true)"
 
 printf '\n\033[1;32mSetup complete.\033[0m\n\n'
+printf 'Go:        %s\n' "$(go env GOVERSION)"
 printf 'Resolver:  http://%s (loopback only)\n' "$LISTEN_ADDR"
 printf 'Domain:    https://%s\n' "$DOMAIN"
 printf 'Service:   systemctl status %s\n' "$SERVICE_NAME"
