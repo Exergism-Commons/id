@@ -10,7 +10,7 @@ curl -fsSL https://raw.githubusercontent.com/Exergism-Commons/id.exergism-common
 
 The bootstrap script:
 
-- installs the current stable Go toolchain (Go 1.22 or newer);
+- resolves the current stable Go release directly from `https://go.dev/VERSION?m=text` and installs that exact stable toolchain, replacing an older preinstalled Go version if necessary;
 - installs Caddy from its official package repository;
 - creates the restricted `idexergism` service account;
 - clones/updates this repository under `/srv/id.exergism.org`;
@@ -21,6 +21,8 @@ The bootstrap script:
 - enables UFW for OpenSSH, HTTP and HTTPS;
 - runs local HTML and Turtle negotiation smoke tests.
 
+`go.mod` intentionally keeps the repository's minimum language/toolchain compatibility at Go 1.22. Production bootstrap and CI use the current stable Go release rather than pinning deployment to that minimum.
+
 The script deliberately does **not** modify DNS. Keep the existing GitHub Pages target until the resolver is healthy locally. Then point the `id.exergism.org` A/AAAA records to the Droplet; Caddy will obtain the public TLS certificate once DNS resolves to the server.
 
 Useful commands after setup:
@@ -29,6 +31,7 @@ Useful commands after setup:
 systemctl status id-exergism
 journalctl -u id-exergism -f
 systemctl status caddy
+go version
 ```
 
 Verify after DNS propagation:
