@@ -20,3 +20,20 @@ jobs:
       - run: go version
       - run: go test ./...
       - run: go vet ./...
+      - name: Validate deployment bootstrap
+        run: bash -n deploy/setup-digitalocean.sh
+      - name: Enforce reviewed redistribution surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f EULA.md
+          test -f THIRD_PARTY_NOTICES.md
+          test -f LICENSES/Go.txt
+          test -f LICENSES/Apache-2.0.txt
+          test ! -f go.sum
+          module_count="$(go list -m all | wc -l | tr -d ' ')"
+          if [[ "$module_count" != "1" ]]; then
+            echo "External Go modules were added. Review licences and update THIRD_PARTY_NOTICES.md before merging." >&2
+            go list -m all >&2
+            exit 1
+          fi
