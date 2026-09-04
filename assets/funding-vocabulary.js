@@ -1,6 +1,11 @@
 (() => {
   "use strict";
 
+  const themeScript = document.createElement("script");
+  themeScript.src = "https://www.exergism.org/assets/theme.js";
+  themeScript.dataset.ecTheme = "";
+  document.head.appendChild(themeScript);
+
   const NS = "https://id.exergism.org/funding#";
   const ONTOLOGY_IRI = "https://id.exergism.org/ontology/funding";
   const TTL_FETCH_URL = "/representations/funding.owl.ttl";
