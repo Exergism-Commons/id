@@ -1,3 +1,3 @@
 module github.com/Exergism-Commons/id.exergism-commons.github.io
 
-go 1.26.0
+go 1.27.0
