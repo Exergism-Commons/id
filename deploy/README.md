@@ -8,12 +8,12 @@ For a fresh **Ubuntu 26.04 LTS** or **Debian 13** Droplet, run:
 curl -fsSL https://raw.githubusercontent.com/Exergism-Commons/id.exergism-commons.github.io/main/deploy/setup-digitalocean.sh | sudo bash
 ```
 
-As reviewed on 4 September 2026, the current stable stack is Go **1.26.8**, Caddy **2.11.4**, `actions/checkout` **v7.0.1** and `actions/setup-go` **v7.0.0**. The bootstrap does not pin Go or Caddy to those point releases: it deliberately resolves the latest stable Go release from `go.dev` and installs Caddy from the official stable package channel so a fresh production deployment receives the then-current stable release.
+As verified by the repository CI on 4 September 2026, the current stable stack is Go **1.27.1**, Caddy **2.11.4**, `actions/checkout` **v7.0.1** and `actions/setup-go` **v7.0.0**. The bootstrap does not pin Go or Caddy to those point releases: it deliberately resolves the latest stable Go release from `go.dev` and installs Caddy from the official stable package channel so a fresh production deployment receives the then-current stable release.
 
 The bootstrap script:
 
 - updates installed operating-system packages from the selected stable/LTS distribution repositories;
-- resolves and installs the current stable Go toolchain, requiring Go 1.26 or newer;
+- resolves and installs the current stable Go toolchain, requiring Go 1.27 or newer;
 - verifies the official SHA-256 of the downloaded Go archive before installation;
 - installs the latest Caddy stable package from its official repository;
 - creates the restricted `idexergism` service account;
