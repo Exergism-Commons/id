@@ -44,7 +44,7 @@ The last request intentionally returns `406` until an Exergism Turtle representa
 
 The resolver intentionally has no external Go module dependencies: it uses the Go standard library plus repository-local code only.
 
-The module now targets the current stable Go language line (`go 1.26.0`). CI and the DigitalOcean bootstrap use the current stable Go toolchain rather than an old pinned patch release. GitHub Actions are pinned to reviewed release commits and Dependabot watches the workflow dependencies for stable updates.
+The module now targets the current stable Go language line (`go 1.27.0`). CI and the DigitalOcean bootstrap use the current stable Go toolchain rather than an old pinned patch release. GitHub Actions are pinned to reviewed release commits and Dependabot watches the workflow dependencies for stable updates.
 
 See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for the reviewed redistribution surface.
 
