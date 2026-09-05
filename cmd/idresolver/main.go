@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/Exergism-Commons/id.exergism-commons.github.io/internal/resolver"
+	"github.com/Exergism-Commons/id/internal/resolver"
 )
 
 func main() {
