@@ -1,0 +1,131 @@
+name: Runtime Release
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: runtime-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+          check-latest: true
+
+      - name: Test resolver
+        run: |
+          set -euo pipefail
+          go version
+          go test ./...
+          go vet ./...
+
+      - name: Build Linux runtime assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+
+          for arch in amd64 arm64; do
+            CGO_ENABLED=0 GOOS=linux GOARCH="$arch" \
+              go build -trimpath -ldflags='-s -w -buildid=' \
+              -o "dist/idresolver-linux-${arch}" ./cmd/idresolver
+          done
+
+          (
+            cd dist
+            sha256sum idresolver-linux-amd64 idresolver-linux-arm64 > SHA256SUMS
+          )
+          printf '%s\n' "$GITHUB_SHA" > dist/SOURCE_COMMIT
+
+          {
+            printf 'source_commit=%s\n' "$GITHUB_SHA"
+            printf 'workflow_run=%s\n' "$GITHUB_RUN_ID"
+            go version
+            go version -m dist/idresolver-linux-amd64
+            go version -m dist/idresolver-linux-arm64
+          } > dist/BUILD_INFO
+
+      - name: Publish runtime release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            release_tag="$GITHUB_REF_NAME"
+            release_title="idresolver ${release_tag}"
+            rolling=0
+          else
+            release_tag="runtime-main"
+            release_title="idresolver runtime-main (${GITHUB_SHA::12})"
+            rolling=1
+
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -f "$release_tag" "$GITHUB_SHA"
+            git push --force origin "refs/tags/${release_tag}"
+          fi
+
+          notes_file="$(mktemp)"
+          cat > "$notes_file" <<EOF
+          Automated Linux runtime build for Exergism Commons idresolver.
+
+          Source commit: \`${GITHUB_SHA}\`
+
+          Assets are built with CGO disabled for linux/amd64 and linux/arm64. Verify the selected binary against \`SHA256SUMS\` before deployment. \`SOURCE_COMMIT\` binds the runtime artifact to the repository revision containing the registry and published representations.
+          EOF
+
+          if gh release view "$release_tag" >/dev/null 2>&1; then
+            gh release upload "$release_tag" \
+              dist/idresolver-linux-amd64 \
+              dist/idresolver-linux-arm64 \
+              dist/SHA256SUMS \
+              dist/SOURCE_COMMIT \
+              dist/BUILD_INFO \
+              --clobber
+            if [[ "$rolling" == "1" ]]; then
+              gh release edit "$release_tag" --title "$release_title" --notes-file "$notes_file" --prerelease
+            else
+              gh release edit "$release_tag" --title "$release_title" --notes-file "$notes_file"
+            fi
+          else
+            if [[ "$rolling" == "1" ]]; then
+              gh release create "$release_tag" \
+                dist/idresolver-linux-amd64 \
+                dist/idresolver-linux-arm64 \
+                dist/SHA256SUMS \
+                dist/SOURCE_COMMIT \
+                dist/BUILD_INFO \
+                --verify-tag \
+                --title "$release_title" \
+                --notes-file "$notes_file" \
+                --prerelease
+            else
+              gh release create "$release_tag" \
+                dist/idresolver-linux-amd64 \
+                dist/idresolver-linux-arm64 \
+                dist/SHA256SUMS \
+                dist/SOURCE_COMMIT \
+                dist/BUILD_INFO \
+                --verify-tag \
+                --title "$release_title" \
+                --notes-file "$notes_file"
+            fi
+          fi
+
+          rm -f "$notes_file"

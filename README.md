@@ -44,21 +44,30 @@ The last request intentionally returns `406` until an Exergism Turtle representa
 
 The resolver intentionally has no external Go module dependencies: it uses the Go standard library plus repository-local code only.
 
-The module now targets the current stable Go language line (`go 1.27.0`). CI and the DigitalOcean bootstrap use the current stable Go toolchain rather than an old pinned patch release. GitHub Actions are pinned to reviewed release commits and Dependabot watches the workflow dependencies for stable updates.
+The module targets the current stable Go language line (`go 1.27.0`, with the reviewed toolchain declared in `go.mod`). GitHub Actions run tests and vetting and build statically linked Linux binaries for `amd64` and `arm64`. Runtime releases publish the binaries together with `SHA256SUMS`, `SOURCE_COMMIT` and build metadata. Production hosts therefore do not need a Go toolchain and do not compile source code.
+
+Pushes to `main` publish the rolling `runtime-main` prerelease channel. Version tags matching `v*` publish versioned release assets suitable for immutable deployment. The DigitalOcean bootstrap verifies the selected binary and ensures the repository state containing the registry and representations matches the exact recorded source commit before starting the service.
+
+GitHub Actions are pinned to reviewed release commits and Dependabot watches the workflow dependencies for stable updates.
 
 See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for the reviewed redistribution surface.
 
 ## Minimal VPS deployment
 
-A 512 MB VPS is sufficient for this service. For new DigitalOcean deployments, prefer a current stable/LTS image such as Ubuntu 26.04 LTS or Debian 13. The intended deployment is:
+A 512 MB VPS is sufficient for this service because build work happens in GitHub Actions rather than on the production host. For new DigitalOcean deployments, prefer a currently supported stable/LTS Ubuntu or Debian image. The intended deployment is:
 
 ```text
-Internet -> TLS frontend -> idresolver (127.0.0.1:8080) -> versioned/static representations
+GitHub Actions -> verified runtime release
+                         |
+                         v
+Internet -> TLS frontend -> idresolver (127.0.0.1:8080) -> release-matched representations
 ```
 
 [`deploy/Caddyfile`](deploy/Caddyfile) is deliberately tiny: Caddy terminates HTTPS and proxies bytes. All semantic routing and MIME negotiation belongs to `idresolver`.
 
-A hardened [`systemd` unit](deploy/id-exergism.service) and a one-shot [`deploy/setup-digitalocean.sh`](deploy/setup-digitalocean.sh) bootstrap are included. No database, Docker runtime, Java service, or application framework is required.
+A hardened [`systemd` unit](deploy/id-exergism.service) and a one-shot [`deploy/setup-digitalocean.sh`](deploy/setup-digitalocean.sh) bootstrap are included. The bootstrap downloads the prebuilt resolver, verifies its SHA-256, checks out the matching release source revision, installs Caddy and systemd, and runs local smoke tests. No database, Docker runtime, Java service, Go toolchain or application framework is required on the Droplet.
+
+See [`deploy/README.md`](deploy/README.md) for the release and deployment contract.
 
 ## Reserved identifier surfaces
 

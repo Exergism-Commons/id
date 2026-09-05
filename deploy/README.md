@@ -1,33 +1,59 @@
 # Deployment
 
+## Build once, run small
+
+Production Droplets do **not** compile the resolver. GitHub Actions builds the Linux runtime assets, records the source commit and publishes SHA-256 checksums. The Droplet only downloads and verifies the prebuilt binary, checks out the matching repository revision and installs the runtime services.
+
+The release workflow publishes:
+
+- `idresolver-linux-amd64`;
+- `idresolver-linux-arm64`;
+- `SHA256SUMS`;
+- `SOURCE_COMMIT`;
+- `BUILD_INFO`.
+
+Pushes to `main` update the rolling prerelease tag `runtime-main`. Tags matching `v*` produce versioned release assets. For an immutable production deployment, set `RELEASE_TAG` to a version tag. `runtime-main` is convenient while bringing up or testing the service.
+
 ## DigitalOcean Droplet bootstrap
 
-For a fresh supported Ubuntu/Debian Droplet, run:
+For a fresh supported Ubuntu or Debian Droplet, run:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Exergism-Commons/id/main/deploy/setup-digitalocean.sh | sudo bash
 ```
 
-The bootstrap installs the distribution Go package as a bootstrap toolchain and uses Go's automatic toolchain management (`GOTOOLCHAIN=auto`) to select the repository toolchain declared in `go.mod`. Caddy is installed from its official stable package channel.
-
 The bootstrap script:
 
 - updates installed operating-system packages;
-- installs a bootstrap Go toolchain from APT and selects the repository Go toolchain automatically;
-- detects hosts with less than 1 GiB RAM and no swap, then creates a persistent 1 GiB `/swapfile` for build headroom;
-- runs Go package compilation serially on tiny hosts to avoid transient compiler OOM failures;
-- installs the latest Caddy stable package from its official repository;
+- installs only runtime/administrative dependencies (`curl`, `git`, `ufw`, Caddy and related base packages);
+- downloads the architecture-matched `idresolver` binary from the selected GitHub Release;
+- verifies the binary against the release `SHA256SUMS`;
+- reads `SOURCE_COMMIT` and checks out the repository tag referenced by `RELEASE_TAG`;
+- refuses deployment if the checked-out commit does not match the binary's recorded source commit;
 - creates the restricted `idexergism` service account;
-- clones/updates this repository under `/srv/id.exergism.org`;
-- runs `go test -p=1 ./...` and `go vet -p=1 ./...` before building;
 - installs the resolver at `/usr/local/bin/idresolver`;
-- installs the EULA, redistribution notices and third-party licence texts under `/usr/local/share/doc/idresolver`;
+- records the deployed release tag, source commit and binary checksum under `/usr/local/share/doc/idresolver`;
 - installs and starts the hardened `id-exergism` systemd service;
 - exposes only Caddy on ports 80/443 and keeps the resolver on `127.0.0.1:8080`;
 - enables UFW for OpenSSH, HTTP and HTTPS;
 - runs local HTML and Turtle negotiation smoke tests.
 
-A 512 MiB Droplet is sufficient for the resolver runtime. Building Go from source on a host that small can briefly exceed physical RAM, which is why the bootstrap provisions swap and limits build parallelism when necessary.
+No Go toolchain, local compilation or build-time swap is required on the Droplet. A 512 MB VPS is therefore sufficient for the intended runtime.
+
+### Selecting a release
+
+The default deployment channel is:
+
+```sh
+RELEASE_TAG=runtime-main
+```
+
+To deploy an immutable versioned release instead:
+
+```sh
+export RELEASE_TAG=v0.1.0
+curl -fsSL https://raw.githubusercontent.com/Exergism-Commons/id/main/deploy/setup-digitalocean.sh | sudo -E bash
+```
 
 The script deliberately does **not** modify DNS. Keep the existing GitHub Pages target until the resolver is healthy locally. Then point the `id.exergism.org` A/AAAA records to the Droplet; Caddy will obtain the public TLS certificate once DNS resolves to the server.
 
@@ -37,9 +63,9 @@ Useful commands after setup:
 systemctl status id-exergism
 journalctl -u id-exergism -f
 systemctl status caddy
-go version
-caddy version
-free -h
+cat /usr/local/share/doc/idresolver/release-tag.txt
+cat /usr/local/share/doc/idresolver/source-revision.txt
+cat /usr/local/share/doc/idresolver/binary-sha256.txt
 ```
 
 Verify after DNS propagation:

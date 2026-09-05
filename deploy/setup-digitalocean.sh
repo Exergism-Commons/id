@@ -10,7 +10,7 @@ set -Eeuo pipefail
 #
 # Optional environment variables:
 #   REPO_URL=https://github.com/Exergism-Commons/id.git
-#   REPO_REF=main
+#   RELEASE_TAG=runtime-main
 #   DOMAIN=id.exergism.org
 #   APP_USER=idexergism
 #   APP_DIR=/srv/id.exergism.org
@@ -18,11 +18,13 @@ set -Eeuo pipefail
 #   LISTEN_ADDR=127.0.0.1:8080
 #   ENABLE_UFW=1
 #
+# Runtime binaries are built by GitHub Actions and published as GitHub Release
+# assets. This host does not need a Go toolchain and does not compile source.
 # DNS is intentionally NOT changed by this script. Point id.exergism.org to the
 # Droplet only after the local resolver and Caddy configuration are healthy.
 
 REPO_URL="${REPO_URL:-https://github.com/Exergism-Commons/id.git}"
-REPO_REF="${REPO_REF:-main}"
+RELEASE_TAG="${RELEASE_TAG:-runtime-main}"
 DOMAIN="${DOMAIN:-id.exergism.org}"
 APP_USER="${APP_USER:-idexergism}"
 APP_DIR="${APP_DIR:-/srv/id.exergism.org}"
@@ -33,6 +35,7 @@ SERVICE_NAME="id-exergism"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 CADDY_FILE="/etc/caddy/Caddyfile"
 DOC_DIR="/usr/local/share/doc/idresolver"
+RELEASE_BASE="https://github.com/Exergism-Commons/id/releases/download/${RELEASE_TAG}"
 
 log()  { printf '\n\033[1;34m==>\033[0m %s\n' "$*"; }
 warn() { printf '\n\033[1;33mWARN:\033[0m %s\n' "$*" >&2; }
@@ -55,13 +58,16 @@ case "${ID:-}" in
   *) die "This bootstrap supports Debian/Ubuntu only (detected: ${ID:-unknown})." ;;
 esac
 
+[[ "$RELEASE_TAG" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]*$ ]] \
+  || die "Invalid RELEASE_TAG: ${RELEASE_TAG}"
+
 export DEBIAN_FRONTEND=noninteractive
 
 log "Updating operating-system packages"
 apt-get update
 apt-get upgrade -y
 
-log "Installing base packages and bootstrap Go toolchain"
+log "Installing base packages"
 apt-get install -y --no-install-recommends \
   ca-certificates \
   curl \
@@ -71,45 +77,46 @@ apt-get install -y --no-install-recommends \
   git \
   gnupg \
   jq \
-  ufw \
-  golang-go
+  ufw
 
-bootstrap_go="$(GOTOOLCHAIN=local go env GOVERSION 2>/dev/null || true)"
-[[ "$bootstrap_go" =~ ^go([0-9]+)\.([0-9]+)(\.[0-9]+)?$ ]] \
-  || die "Could not determine the bootstrap Go version installed by APT."
-bootstrap_major="${BASH_REMATCH[1]}"
-bootstrap_minor="${BASH_REMATCH[2]}"
-if (( bootstrap_major < 1 || (bootstrap_major == 1 && bootstrap_minor < 21) )); then
-  die "Bootstrap Go ${bootstrap_go} is too old for automatic toolchain management; Go 1.21+ is required."
-fi
+arch="$(dpkg --print-architecture)"
+case "$arch" in
+  amd64|arm64) ;;
+  *) die "Unsupported CPU architecture for idresolver release assets: $arch" ;;
+esac
+asset="idresolver-linux-${arch}"
 
-log "Using bootstrap Go toolchain: ${bootstrap_go}"
+download_release_asset() {
+  local name="$1" target="$2"
+  curl \
+    --retry 8 \
+    --retry-all-errors \
+    --retry-delay 3 \
+    --connect-timeout 10 \
+    -fsSL \
+    "${RELEASE_BASE}/${name}" \
+    -o "$target"
+}
 
-# Small Droplets are perfectly adequate for the resolver at runtime, but the Go
-# compiler can briefly exceed 512 MiB while compiling the standard library and
-# tests. Add persistent swap only when the host has less than 1 GiB of RAM and
-# currently has no swap configured.
-mem_kib="$(awk '/^MemTotal:/ {print $2}' /proc/meminfo)"
-swap_kib="$(awk '/^SwapTotal:/ {print $2}' /proc/meminfo)"
-if (( mem_kib < 1048576 && swap_kib == 0 )); then
-  log "Low-memory host detected; configuring 1 GiB swap for build headroom"
-  if [[ ! -f /swapfile ]]; then
-    if ! fallocate -l 1G /swapfile; then
-      dd if=/dev/zero of=/swapfile bs=1M count=1024 status=progress
-    fi
-  fi
-  chmod 600 /swapfile
-  if ! file /swapfile | grep -q 'swap file'; then
-    mkswap /swapfile >/dev/null
-  fi
-  swapon /swapfile
-  if ! grep -Eq '^/swapfile[[:space:]]+none[[:space:]]+swap([[:space:]]|$)' /etc/fstab; then
-    printf '/swapfile none swap sw 0 0\n' >> /etc/fstab
-  fi
-fi
+log "Downloading prebuilt idresolver release ${RELEASE_TAG}"
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
 
-log "Memory available for bootstrap"
-free -h
+download_release_asset SOURCE_COMMIT "${tmpdir}/SOURCE_COMMIT"
+download_release_asset SHA256SUMS "${tmpdir}/SHA256SUMS"
+download_release_asset "$asset" "${tmpdir}/${asset}"
+
+source_commit="$(tr -d '\r\n' < "${tmpdir}/SOURCE_COMMIT")"
+[[ "$source_commit" =~ ^[0-9a-f]{40}$ ]] \
+  || die "Release SOURCE_COMMIT is not a valid Git commit SHA."
+
+expected_checksum="$(awk -v asset="$asset" '$2 == asset {print $1}' "${tmpdir}/SHA256SUMS")"
+[[ "$expected_checksum" =~ ^[0-9a-f]{64}$ ]] \
+  || die "Could not find a valid SHA-256 for ${asset} in the release checksum file."
+actual_checksum="$(sha256sum "${tmpdir}/${asset}" | awk '{print $1}')"
+[[ "$actual_checksum" == "$expected_checksum" ]] \
+  || die "SHA-256 verification failed for ${asset}."
+chmod 0755 "${tmpdir}/${asset}"
 
 log "Installing latest Caddy stable from the official repository"
 install -d -m 0755 /usr/share/keyrings
@@ -131,41 +138,34 @@ if ! id "$APP_USER" >/dev/null 2>&1; then
     "$APP_USER"
 fi
 
-log "Fetching Exergism identifier service"
+log "Fetching release-matched repository state"
 if [[ -d "${APP_DIR}/.git" ]]; then
   git -C "$APP_DIR" remote set-url origin "$REPO_URL"
-  git -C "$APP_DIR" fetch --prune origin
-  git -C "$APP_DIR" checkout "$REPO_REF"
-  git -C "$APP_DIR" reset --hard "origin/${REPO_REF}"
 else
   if [[ -e "$APP_DIR" && -n "$(find "$APP_DIR" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]]; then
     die "$APP_DIR exists and is not an empty Git repository. Refusing to overwrite it."
   fi
   rm -rf "$APP_DIR"
-  git clone --branch "$REPO_REF" --depth 1 "$REPO_URL" "$APP_DIR"
+  git init "$APP_DIR"
+  git -C "$APP_DIR" remote add origin "$REPO_URL"
 fi
+
+git -C "$APP_DIR" fetch --force --depth 1 origin \
+  "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
+git -C "$APP_DIR" checkout --detach "refs/tags/${RELEASE_TAG}"
+git -C "$APP_DIR" reset --hard "refs/tags/${RELEASE_TAG}"
+git -C "$APP_DIR" clean -fdx
+
+checked_out_commit="$(git -C "$APP_DIR" rev-parse HEAD)"
+[[ "$checked_out_commit" == "$source_commit" ]] \
+  || die "Release binary source ${source_commit} does not match checked-out repository ${checked_out_commit}."
+
 chown -R root:root "$APP_DIR"
 chmod -R a+rX "$APP_DIR"
 
-log "Selecting repository Go toolchain"
-cd "$APP_DIR"
-export GOTOOLCHAIN=auto
-export GOPROXY="${GOPROXY:-https://proxy.golang.org,direct}"
-export GOSUMDB="${GOSUMDB:-sum.golang.org}"
-
-# Since Go 1.21, the go command can download and select the toolchain required
-# by go.mod. This deliberately avoids direct tarball downloads from dl.google.com.
-go version
-
-log "Testing and building resolver"
-# Keep package build concurrency at one on tiny hosts. The resolver itself is
-# small; this only reduces transient compiler memory pressure during bootstrap.
-export GOMAXPROCS="${GOMAXPROCS:-1}"
-go test -p=1 ./...
-go vet -p=1 ./...
-go build -p=1 -trimpath -ldflags='-s -w' -o /tmp/idresolver ./cmd/idresolver
-install -o root -g root -m 0755 /tmp/idresolver "$APP_BIN"
-rm -f /tmp/idresolver
+log "Installing verified resolver binary"
+install -o root -g root -m 0755 "${tmpdir}/${asset}" "$APP_BIN"
+"$APP_BIN" -h >/dev/null 2>&1 || true
 
 log "Installing redistribution and license notices"
 install -d -o root -g root -m 0755 "$DOC_DIR"
@@ -174,8 +174,10 @@ for notice in EULA.md THIRD_PARTY_NOTICES.md LICENSES/Go.txt LICENSES/Apache-2.0
     install -o root -g root -m 0644 "${APP_DIR}/${notice}" "${DOC_DIR}/$(basename "$notice")"
   fi
 done
-git -C "$APP_DIR" rev-parse HEAD > "${DOC_DIR}/source-revision.txt"
-chmod 0644 "${DOC_DIR}/source-revision.txt"
+printf '%s\n' "$source_commit" > "${DOC_DIR}/source-revision.txt"
+printf '%s\n' "$RELEASE_TAG" > "${DOC_DIR}/release-tag.txt"
+printf '%s  %s\n' "$expected_checksum" "$asset" > "${DOC_DIR}/binary-sha256.txt"
+chmod 0644 "${DOC_DIR}/source-revision.txt" "${DOC_DIR}/release-tag.txt" "${DOC_DIR}/binary-sha256.txt"
 
 log "Installing systemd service"
 cat > "$SERVICE_FILE" <<EOF
@@ -241,10 +243,15 @@ curl -fsSI -H 'Accept: text/turtle' "http://${LISTEN_ADDR}/ontology/funding" >/d
 
 PUBLIC_IP="$(curl -4 -fsS --max-time 5 https://api.ipify.org || true)"
 
+rm -rf "$tmpdir"
+trap - EXIT
+
 printf '\n\033[1;32mSetup complete.\033[0m\n\n'
+printf 'Release:   %s\n' "$RELEASE_TAG"
+printf 'Source:    %s\n' "$source_commit"
+printf 'Binary:    %s\n' "$asset"
 printf 'Resolver:  http://%s (loopback only)\n' "$LISTEN_ADDR"
 printf 'Domain:    https://%s\n' "$DOMAIN"
-printf 'Go:        %s\n' "$(go env GOVERSION)"
 printf 'Caddy:     %s\n' "$(caddy version | head -n1)"
 printf 'Service:   systemctl status %s\n' "$SERVICE_NAME"
 printf 'Logs:      journalctl -u %s -f\n' "$SERVICE_NAME"
