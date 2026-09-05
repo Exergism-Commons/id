@@ -6,15 +6,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"mime"
 	"net/http"
 	"os"
+	"path"
 	"strconv"
+	"strings"
 )
 
 // PublishedHandler wraps the semantic resolver and additionally serves every
-// representation public_path declared by the registry. Public paths are
-// dereferenceable representation locations; they do not become new semantic
-// authorities and retain the canonical Link of the resource they represent.
+// representation public_path declared by the registry plus the repository's
+// static frontend assets under /assets/. Public paths are dereferenceable
+// representation locations; assets are presentation resources and do not
+// become semantic authorities.
 type PublishedHandler struct {
 	core   *Handler
 	root   fs.FS
@@ -74,6 +78,11 @@ func LoadPublished(rootDir, registryPath string) (*PublishedHandler, error) {
 }
 
 func (h *PublishedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if strings.HasPrefix(r.URL.Path, "/assets/") {
+		h.serveAsset(w, r)
+		return
+	}
+
 	published, ok := h.public[r.URL.Path]
 	if !ok {
 		h.core.ServeHTTP(w, r)
@@ -110,6 +119,55 @@ func (h *PublishedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if published.route.CacheControl != "" {
 		w.Header().Set("Cache-Control", published.route.CacheControl)
 	}
+
+	if r.Header.Get("If-None-Match") == etag {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+
+	w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+	w.WriteHeader(http.StatusOK)
+	if r.Method == http.MethodGet {
+		_, _ = w.Write(data)
+	}
+}
+
+func (h *PublishedHandler) serveAsset(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		w.Header().Set("Allow", "GET, HEAD")
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	rel := strings.TrimPrefix(r.URL.Path, "/")
+	if rel == "assets/" || !fs.ValidPath(rel) {
+		http.NotFound(w, r)
+		return
+	}
+
+	info, err := fs.Stat(h.root, rel)
+	if err != nil || !info.Mode().IsRegular() {
+		http.NotFound(w, r)
+		return
+	}
+
+	data, err := fs.ReadFile(h.root, rel)
+	if err != nil {
+		http.Error(w, "asset unavailable", http.StatusInternalServerError)
+		return
+	}
+
+	mediaType := mime.TypeByExtension(path.Ext(rel))
+	if mediaType == "" {
+		mediaType = "application/octet-stream"
+	}
+
+	sum := sha256.Sum256(data)
+	etag := `"sha256-` + hex.EncodeToString(sum[:]) + `"`
+	w.Header().Set("Content-Type", mediaType)
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Cache-Control", "public, max-age=3600")
+	w.Header().Set("ETag", etag)
 
 	if r.Header.Get("If-None-Match") == etag {
 		w.WriteHeader(http.StatusNotModified)
