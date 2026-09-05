@@ -1,3 +1,5 @@
-module github.com/Exergism-Commons/id.exergism-commons.github.io
+module github.com/Exergism-Commons/id
 
 go 1.27.0
+
+toolchain go1.27.1
