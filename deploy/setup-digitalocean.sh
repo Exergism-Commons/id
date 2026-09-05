@@ -93,7 +93,9 @@ resolve_stable_go() {
 }
 
 install_go() {
-  local version="$1" arch go_arch tarball checksum metadata tmpdir target primary_url fallback_url
+  local preferred_version="$1" arch go_arch metadata plain major rest minor series candidates
+  local version tarball checksum tmpdir target primary_url fallback_url
+
   arch="$(dpkg --print-architecture)"
   case "$arch" in
     amd64) go_arch="amd64" ;;
@@ -101,33 +103,63 @@ install_go() {
     *) die "Unsupported CPU architecture for Go bootstrap: $arch" ;;
   esac
 
-  tarball="${version}.linux-${go_arch}.tar.gz"
   metadata="$(curl --retry 5 --retry-all-errors --retry-delay 2 -fsSL 'https://go.dev/dl/?mode=json&include=all')"
-  checksum="$(jq -r --arg version "$version" --arg filename "$tarball" '
-    [.[] | select(.version == $version) | .files[] | select(.filename == $filename)][0].sha256 // empty
+
+  plain="${preferred_version#go}"
+  major="${plain%%.*}"
+  rest="${plain#*.}"
+  minor="${rest%%.*}"
+  series="go${major}.${minor}"
+
+  candidates="$(jq -r --arg series "$series" --arg arch "$go_arch" '
+    .[]
+    | select(.version == $series or (.version | startswith($series + ".")))
+    | . as $release
+    | $release.files[]
+    | select(.os == "linux" and .arch == $arch and .kind == "archive")
+    | [$release.version, .filename, .sha256]
+    | @tsv
   ' <<<"$metadata")"
-  [[ "$checksum" =~ ^[0-9a-f]{64}$ ]] || die "Could not resolve the official SHA-256 for ${tarball}."
 
-  tmpdir="$(mktemp -d)"
-  target="${tmpdir}/${tarball}"
-  primary_url="https://go.dev/dl/${tarball}"
-  fallback_url="https://dl.google.com/go/${tarball}"
+  [[ -n "$candidates" ]] || die "Could not find Linux/${go_arch} archives for Go ${series} in the official release catalog."
 
-  if ! curl --retry 5 --retry-all-errors --retry-delay 2 -fsSL "$primary_url" -o "$target"; then
-    warn "Go download failed via ${primary_url}; retrying with the official download mirror."
-    if ! curl --retry 5 --retry-all-errors --retry-delay 2 -fsSL "$fallback_url" -o "$target"; then
+  while IFS=$'\t' read -r version tarball checksum; do
+    [[ "$version" =~ ^go[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || continue
+    [[ "$checksum" =~ ^[0-9a-f]{64}$ ]] || continue
+
+    tmpdir="$(mktemp -d)"
+    target="${tmpdir}/${tarball}"
+    primary_url="https://go.dev/dl/${tarball}"
+    fallback_url="https://dl.google.com/go/${tarball}"
+
+    log "Trying Go toolchain ${version} (${tarball})"
+
+    if curl --retry 3 --retry-delay 2 -fsSL "$primary_url" -o "$target"; then
+      printf '%s  %s\n' "$checksum" "$target" | sha256sum -c - >/dev/null
+      rm -rf /usr/local/go
+      tar -C /usr/local -xzf "$target"
       rm -rf "$tmpdir"
-      die "Could not download ${tarball} from either official Go download endpoint."
+      ln -sf /usr/local/go/bin/go /usr/local/bin/go
+      ln -sf /usr/local/go/bin/gofmt /usr/local/bin/gofmt
+      return 0
     fi
-  fi
 
-  printf '%s  %s\n' "$checksum" "$target" | sha256sum -c - >/dev/null
+    warn "Go download failed via ${primary_url}; trying the official download mirror."
+    if curl --retry 3 --retry-delay 2 -fsSL "$fallback_url" -o "$target"; then
+      printf '%s  %s\n' "$checksum" "$target" | sha256sum -c - >/dev/null
+      rm -rf /usr/local/go
+      tar -C /usr/local -xzf "$target"
+      rm -rf "$tmpdir"
+      ln -sf /usr/local/go/bin/go /usr/local/bin/go
+      ln -sf /usr/local/go/bin/gofmt /usr/local/bin/gofmt
+      return 0
+    fi
 
-  rm -rf /usr/local/go
-  tar -C /usr/local -xzf "$target"
-  rm -rf "$tmpdir"
-  ln -sf /usr/local/go/bin/go /usr/local/bin/go
-  ln -sf /usr/local/go/bin/gofmt /usr/local/bin/gofmt
+    warn "Go ${version} is listed by the official catalog but is not downloadable from this host; trying the previous ${series} patch release."
+    rm -rf "$tmpdir"
+  done <<<"$candidates"
+
+  die "Could not download any official Linux/${go_arch} archive from the Go ${series} release line."
 }
 
 stable_go="$(resolve_stable_go)"
