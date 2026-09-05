@@ -2,29 +2,32 @@
 
 ## DigitalOcean Droplet bootstrap
 
-For a fresh **Ubuntu 26.04 LTS** or **Debian 13** Droplet, run:
+For a fresh supported Ubuntu/Debian Droplet, run:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Exergism-Commons/id/main/deploy/setup-digitalocean.sh | sudo bash
 ```
 
-As verified by the repository CI on 4 September 2026, the current stable stack is Go **1.27.1**, Caddy **2.11.4**, `actions/checkout` **v7.0.1** and `actions/setup-go` **v7.0.0**. The bootstrap does not pin Go or Caddy to those point releases: it deliberately resolves the latest stable Go release from `go.dev` and installs Caddy from the official stable package channel so a fresh production deployment receives the then-current stable release.
+The bootstrap installs the distribution Go package as a bootstrap toolchain and uses Go's automatic toolchain management (`GOTOOLCHAIN=auto`) to select the repository toolchain declared in `go.mod`. Caddy is installed from its official stable package channel.
 
 The bootstrap script:
 
-- updates installed operating-system packages from the selected stable/LTS distribution repositories;
-- resolves and installs the current stable Go toolchain, requiring Go 1.27 or newer;
-- verifies the official SHA-256 of the downloaded Go archive before installation;
+- updates installed operating-system packages;
+- installs a bootstrap Go toolchain from APT and selects the repository Go toolchain automatically;
+- detects hosts with less than 1 GiB RAM and no swap, then creates a persistent 1 GiB `/swapfile` for build headroom;
+- runs Go package compilation serially on tiny hosts to avoid transient compiler OOM failures;
 - installs the latest Caddy stable package from its official repository;
 - creates the restricted `idexergism` service account;
 - clones/updates this repository under `/srv/id.exergism.org`;
-- runs `go test ./...` and `go vet ./...` before building;
+- runs `go test -p=1 ./...` and `go vet -p=1 ./...` before building;
 - installs the resolver at `/usr/local/bin/idresolver`;
 - installs the EULA, redistribution notices and third-party licence texts under `/usr/local/share/doc/idresolver`;
 - installs and starts the hardened `id-exergism` systemd service;
 - exposes only Caddy on ports 80/443 and keeps the resolver on `127.0.0.1:8080`;
 - enables UFW for OpenSSH, HTTP and HTTPS;
 - runs local HTML and Turtle negotiation smoke tests.
+
+A 512 MiB Droplet is sufficient for the resolver runtime. Building Go from source on a host that small can briefly exceed physical RAM, which is why the bootstrap provisions swap and limits build parallelism when necessary.
 
 The script deliberately does **not** modify DNS. Keep the existing GitHub Pages target until the resolver is healthy locally. Then point the `id.exergism.org` A/AAAA records to the Droplet; Caddy will obtain the public TLS certificate once DNS resolves to the server.
 
@@ -36,6 +39,7 @@ journalctl -u id-exergism -f
 systemctl status caddy
 go version
 caddy version
+free -h
 ```
 
 Verify after DNS propagation:
