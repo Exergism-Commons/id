@@ -3,9 +3,7 @@ set -Eeuo pipefail
 
 # Exergism Commons — id.exergism.org DigitalOcean Droplet bootstrap
 #
-# Target: fresh Ubuntu 26.04 LTS or Debian 13 Droplet, run as root.
-# Other currently supported Debian/Ubuntu releases may work, but production
-# deployments should use a currently supported stable/LTS image.
+# Target: fresh Ubuntu/Debian Droplet, run as root.
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/Exergism-Commons/id/main/deploy/setup-digitalocean.sh | sudo bash
@@ -63,7 +61,7 @@ log "Updating operating-system packages"
 apt-get update
 apt-get upgrade -y
 
-log "Installing base packages"
+log "Installing base packages and bootstrap Go toolchain"
 apt-get install -y --no-install-recommends \
   ca-certificates \
   curl \
@@ -73,114 +71,19 @@ apt-get install -y --no-install-recommends \
   git \
   gnupg \
   jq \
-  ufw
+  ufw \
+  golang-go
 
-resolve_stable_go() {
-  local metadata version major minor
-  metadata="$(curl --retry 5 --retry-all-errors --retry-delay 2 -fsSL 'https://go.dev/dl/?mode=json')"
-  version="$(jq -r '[.[] | select(.stable == true)][0].version // empty' <<<"$metadata")"
-  [[ "$version" =~ ^go[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || die "Could not determine a valid stable Go version from go.dev."
-
-  major="${version#go}"
-  minor="${major#*.}"
-  major="${major%%.*}"
-  minor="${minor%%.*}"
-  if (( major < 1 || (major == 1 && minor < 27) )); then
-    die "Resolved Go version ${version} is older than the repository minimum Go 1.27."
-  fi
-
-  printf '%s\n' "$version"
-}
-
-install_go() {
-  local preferred_version="$1" arch go_arch metadata plain major rest minor series candidates
-  local version tarball checksum tmpdir target primary_url fallback_url
-
-  arch="$(dpkg --print-architecture)"
-  case "$arch" in
-    amd64) go_arch="amd64" ;;
-    arm64) go_arch="arm64" ;;
-    *) die "Unsupported CPU architecture for Go bootstrap: $arch" ;;
-  esac
-
-  metadata="$(curl --retry 5 --retry-all-errors --retry-delay 2 -fsSL 'https://go.dev/dl/?mode=json&include=all')"
-
-  plain="${preferred_version#go}"
-  major="${plain%%.*}"
-  rest="${plain#*.}"
-  minor="${rest%%.*}"
-  series="go${major}.${minor}"
-
-  candidates="$(jq -r --arg series "$series" --arg arch "$go_arch" '
-    .[]
-    | select(.version == $series or (.version | startswith($series + ".")))
-    | . as $release
-    | $release.files[]
-    | select(.os == "linux" and .arch == $arch and .kind == "archive")
-    | [$release.version, .filename, .sha256]
-    | @tsv
-  ' <<<"$metadata")"
-
-  [[ -n "$candidates" ]] || die "Could not find Linux/${go_arch} archives for Go ${series} in the official release catalog."
-
-  while IFS=$'\t' read -r version tarball checksum; do
-    [[ "$version" =~ ^go[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || continue
-    [[ "$checksum" =~ ^[0-9a-f]{64}$ ]] || continue
-
-    tmpdir="$(mktemp -d)"
-    target="${tmpdir}/${tarball}"
-    primary_url="https://go.dev/dl/${tarball}"
-    fallback_url="https://dl.google.com/go/${tarball}"
-
-    log "Trying Go toolchain ${version} (${tarball})"
-
-    if curl --retry 3 --retry-delay 2 -fsSL "$primary_url" -o "$target"; then
-      printf '%s  %s\n' "$checksum" "$target" | sha256sum -c - >/dev/null
-      rm -rf /usr/local/go
-      tar -C /usr/local -xzf "$target"
-      rm -rf "$tmpdir"
-      ln -sf /usr/local/go/bin/go /usr/local/bin/go
-      ln -sf /usr/local/go/bin/gofmt /usr/local/bin/gofmt
-      return 0
-    fi
-
-    warn "Go download failed via ${primary_url}; trying the official download mirror."
-    if curl --retry 3 --retry-delay 2 -fsSL "$fallback_url" -o "$target"; then
-      printf '%s  %s\n' "$checksum" "$target" | sha256sum -c - >/dev/null
-      rm -rf /usr/local/go
-      tar -C /usr/local -xzf "$target"
-      rm -rf "$tmpdir"
-      ln -sf /usr/local/go/bin/go /usr/local/bin/go
-      ln -sf /usr/local/go/bin/gofmt /usr/local/bin/gofmt
-      return 0
-    fi
-
-    warn "Go ${version} is listed by the official catalog but is not downloadable from this host; trying the previous ${series} patch release."
-    rm -rf "$tmpdir"
-  done <<<"$candidates"
-
-  die "Could not download any official Linux/${go_arch} archive from the Go ${series} release line."
-}
-
-stable_go="$(resolve_stable_go)"
-if command -v go >/dev/null 2>&1; then
-  current_go="$(go env GOVERSION 2>/dev/null || true)"
-else
-  current_go=""
+bootstrap_go="$(GOTOOLCHAIN=local go env GOVERSION 2>/dev/null || true)"
+[[ "$bootstrap_go" =~ ^go([0-9]+)\.([0-9]+)(\.[0-9]+)?$ ]] \
+  || die "Could not determine the bootstrap Go version installed by APT."
+bootstrap_major="${BASH_REMATCH[1]}"
+bootstrap_minor="${BASH_REMATCH[2]}"
+if (( bootstrap_major < 1 || (bootstrap_major == 1 && bootstrap_minor < 21) )); then
+  die "Bootstrap Go ${bootstrap_go} is too old for automatic toolchain management; Go 1.21+ is required."
 fi
 
-if [[ "$current_go" == "$stable_go" ]]; then
-  log "Using current stable Go toolchain: $current_go"
-else
-  if [[ -n "$current_go" ]]; then
-    log "Replacing Go ${current_go} with current stable ${stable_go}"
-  else
-    log "Installing current stable Go toolchain: ${stable_go}"
-  fi
-  install_go "$stable_go"
-fi
-
-go version
+log "Using bootstrap Go toolchain: ${bootstrap_go}"
 
 log "Installing latest Caddy stable from the official repository"
 install -d -m 0755 /usr/share/keyrings
@@ -204,6 +107,7 @@ fi
 
 log "Fetching Exergism identifier service"
 if [[ -d "${APP_DIR}/.git" ]]; then
+  git -C "$APP_DIR" remote set-url origin "$REPO_URL"
   git -C "$APP_DIR" fetch --prune origin
   git -C "$APP_DIR" checkout "$REPO_REF"
   git -C "$APP_DIR" reset --hard "origin/${REPO_REF}"
@@ -217,8 +121,17 @@ fi
 chown -R root:root "$APP_DIR"
 chmod -R a+rX "$APP_DIR"
 
-log "Testing and building resolver"
+log "Selecting repository Go toolchain"
 cd "$APP_DIR"
+export GOTOOLCHAIN=auto
+export GOPROXY="${GOPROXY:-https://proxy.golang.org,direct}"
+export GOSUMDB="${GOSUMDB:-sum.golang.org}"
+
+# Since Go 1.21, the go command can download and select the toolchain required
+# by go.mod. This deliberately avoids direct tarball downloads from dl.google.com.
+go version
+
+log "Testing and building resolver"
 go test ./...
 go vet ./...
 go build -trimpath -ldflags='-s -w' -o /tmp/idresolver ./cmd/idresolver
