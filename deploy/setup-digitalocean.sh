@@ -8,10 +8,10 @@ set -Eeuo pipefail
 # deployments should use a currently supported stable/LTS image.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/Exergism-Commons/id.exergism-commons.github.io/main/deploy/setup-digitalocean.sh | sudo bash
+#   curl -fsSL https://raw.githubusercontent.com/Exergism-Commons/id/main/deploy/setup-digitalocean.sh | sudo bash
 #
 # Optional environment variables:
-#   REPO_URL=https://github.com/Exergism-Commons/id.exergism-commons.github.io.git
+#   REPO_URL=https://github.com/Exergism-Commons/id.git
 #   REPO_REF=main
 #   DOMAIN=id.exergism.org
 #   APP_USER=idexergism
@@ -23,7 +23,7 @@ set -Eeuo pipefail
 # DNS is intentionally NOT changed by this script. Point id.exergism.org to the
 # Droplet only after the local resolver and Caddy configuration are healthy.
 
-REPO_URL="${REPO_URL:-https://github.com/Exergism-Commons/id.exergism-commons.github.io.git}"
+REPO_URL="${REPO_URL:-https://github.com/Exergism-Commons/id.git}"
 REPO_REF="${REPO_REF:-main}"
 DOMAIN="${DOMAIN:-id.exergism.org}"
 APP_USER="${APP_USER:-idexergism}"
