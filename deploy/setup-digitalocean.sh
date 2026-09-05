@@ -77,7 +77,7 @@ apt-get install -y --no-install-recommends \
 
 resolve_stable_go() {
   local metadata version major minor
-  metadata="$(curl -fsSL 'https://go.dev/dl/?mode=json')"
+  metadata="$(curl --retry 5 --retry-all-errors --retry-delay 2 -fsSL 'https://go.dev/dl/?mode=json')"
   version="$(jq -r '[.[] | select(.stable == true)][0].version // empty' <<<"$metadata")"
   [[ "$version" =~ ^go[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || die "Could not determine a valid stable Go version from go.dev."
 
@@ -93,7 +93,7 @@ resolve_stable_go() {
 }
 
 install_go() {
-  local version="$1" arch go_arch tarball checksum metadata tmpdir
+  local version="$1" arch go_arch tarball checksum metadata tmpdir target primary_url fallback_url
   arch="$(dpkg --print-architecture)"
   case "$arch" in
     amd64) go_arch="amd64" ;;
@@ -102,18 +102,29 @@ install_go() {
   esac
 
   tarball="${version}.linux-${go_arch}.tar.gz"
-  metadata="$(curl -fsSL 'https://go.dev/dl/?mode=json&include=all')"
+  metadata="$(curl --retry 5 --retry-all-errors --retry-delay 2 -fsSL 'https://go.dev/dl/?mode=json&include=all')"
   checksum="$(jq -r --arg version "$version" --arg filename "$tarball" '
     [.[] | select(.version == $version) | .files[] | select(.filename == $filename)][0].sha256 // empty
   ' <<<"$metadata")"
   [[ "$checksum" =~ ^[0-9a-f]{64}$ ]] || die "Could not resolve the official SHA-256 for ${tarball}."
 
   tmpdir="$(mktemp -d)"
-  curl -fsSL "https://go.dev/dl/${tarball}" -o "${tmpdir}/${tarball}"
-  printf '%s  %s\n' "$checksum" "${tmpdir}/${tarball}" | sha256sum -c - >/dev/null
+  target="${tmpdir}/${tarball}"
+  primary_url="https://go.dev/dl/${tarball}"
+  fallback_url="https://dl.google.com/go/${tarball}"
+
+  if ! curl --retry 5 --retry-all-errors --retry-delay 2 -fsSL "$primary_url" -o "$target"; then
+    warn "Go download failed via ${primary_url}; retrying with the official download mirror."
+    if ! curl --retry 5 --retry-all-errors --retry-delay 2 -fsSL "$fallback_url" -o "$target"; then
+      rm -rf "$tmpdir"
+      die "Could not download ${tarball} from either official Go download endpoint."
+    fi
+  fi
+
+  printf '%s  %s\n' "$checksum" "$target" | sha256sum -c - >/dev/null
 
   rm -rf /usr/local/go
-  tar -C /usr/local -xzf "${tmpdir}/${tarball}"
+  tar -C /usr/local -xzf "$target"
   rm -rf "$tmpdir"
   ln -sf /usr/local/go/bin/go /usr/local/bin/go
   ln -sf /usr/local/go/bin/gofmt /usr/local/bin/gofmt
