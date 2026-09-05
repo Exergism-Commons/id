@@ -205,7 +205,10 @@ WantedBy=multi-user.target
 EOF
 
 systemctl daemon-reload
-systemctl enable --now "$SERVICE_NAME"
+systemctl enable "$SERVICE_NAME"
+# A replaced executable is not picked up by an already-running process.
+# Always restart so repeated deployments actually activate the verified binary.
+systemctl restart "$SERVICE_NAME"
 
 log "Waiting for local resolver"
 for _ in {1..30}; do
@@ -237,9 +240,11 @@ if [[ "$ENABLE_UFW" == "1" ]]; then
   ufw --force enable
 fi
 
-log "Running local negotiation smoke tests"
+log "Running local negotiation and frontend smoke tests"
 curl -fsSI -H 'Accept: text/html' "http://${LISTEN_ADDR}/funding" >/dev/null
 curl -fsSI -H 'Accept: text/turtle' "http://${LISTEN_ADDR}/ontology/funding" >/dev/null
+curl -fsSI "http://${LISTEN_ADDR}/assets/id.css" >/dev/null
+curl -fsSI "http://${LISTEN_ADDR}/assets/funding-vocabulary.js" >/dev/null
 
 PUBLIC_IP="$(curl -4 -fsS --max-time 5 https://api.ipify.org || true)"
 
