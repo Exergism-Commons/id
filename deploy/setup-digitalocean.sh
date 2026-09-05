@@ -85,6 +85,32 @@ fi
 
 log "Using bootstrap Go toolchain: ${bootstrap_go}"
 
+# Small Droplets are perfectly adequate for the resolver at runtime, but the Go
+# compiler can briefly exceed 512 MiB while compiling the standard library and
+# tests. Add persistent swap only when the host has less than 1 GiB of RAM and
+# currently has no swap configured.
+mem_kib="$(awk '/^MemTotal:/ {print $2}' /proc/meminfo)"
+swap_kib="$(awk '/^SwapTotal:/ {print $2}' /proc/meminfo)"
+if (( mem_kib < 1048576 && swap_kib == 0 )); then
+  log "Low-memory host detected; configuring 1 GiB swap for build headroom"
+  if [[ ! -f /swapfile ]]; then
+    if ! fallocate -l 1G /swapfile; then
+      dd if=/dev/zero of=/swapfile bs=1M count=1024 status=progress
+    fi
+  fi
+  chmod 600 /swapfile
+  if ! file /swapfile | grep -q 'swap file'; then
+    mkswap /swapfile >/dev/null
+  fi
+  swapon /swapfile
+  if ! grep -Eq '^/swapfile[[:space:]]+none[[:space:]]+swap([[:space:]]|$)' /etc/fstab; then
+    printf '/swapfile none swap sw 0 0\n' >> /etc/fstab
+  fi
+fi
+
+log "Memory available for bootstrap"
+free -h
+
 log "Installing latest Caddy stable from the official repository"
 install -d -m 0755 /usr/share/keyrings
 curl -fsSL https://dl.cloudsmith.io/public/caddy/stable/gpg.key \
@@ -132,9 +158,12 @@ export GOSUMDB="${GOSUMDB:-sum.golang.org}"
 go version
 
 log "Testing and building resolver"
-go test ./...
-go vet ./...
-go build -trimpath -ldflags='-s -w' -o /tmp/idresolver ./cmd/idresolver
+# Keep package build concurrency at one on tiny hosts. The resolver itself is
+# small; this only reduces transient compiler memory pressure during bootstrap.
+export GOMAXPROCS="${GOMAXPROCS:-1}"
+go test -p=1 ./...
+go vet -p=1 ./...
+go build -p=1 -trimpath -ldflags='-s -w' -o /tmp/idresolver ./cmd/idresolver
 install -o root -g root -m 0755 /tmp/idresolver "$APP_BIN"
 rm -f /tmp/idresolver
 
