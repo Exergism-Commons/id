@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "authority": "https://id.exergism.org/",
+  "policy": {
+    "resolver_is_semantic_authority": false,
+    "historical_releases_are_immutable": true,
+    "namespace_reassignment_forbidden": true
+  },
+  "namespaces": [
+    {
+      "id": "commons",
+      "namespace": "https://id.exergism.org/commons#",
+      "ontology": "https://id.exergism.org/ontology/commons",
+      "status": "adopted",
+      "owner_repository": "Exergism-Commons/governance",
+      "source_path": "ontology/commons.ttl",
+      "authority_scope": "minimal cross-project primitives",
+      "term_catalog_status": "source-authoritative"
+    },
+    {
+      "id": "governance",
+      "namespace": "https://id.exergism.org/governance#",
+      "ontology": "https://id.exergism.org/ontology/governance",
+      "status": "adopted",
+      "owner_repository": "Exergism-Commons/governance",
+      "source_path": "ontology/governance.ttl",
+      "authority_scope": "Exergism Commons institutional governance",
+      "imports": ["commons"],
+      "term_catalog_status": "source-authoritative"
+    },
+    {
+      "id": "funding",
+      "namespace": "https://id.exergism.org/funding#",
+      "ontology": "https://id.exergism.org/ontology/funding",
+      "status": "adopted",
+      "owner_repository": "Exergism-Commons/funding",
+      "source_path": "ontology/funding.owl.ttl",
+      "authority_scope": "funding-specific semantics and funding governance records",
+      "imports": ["commons", "governance"],
+      "term_catalog_status": "source-authoritative"
+    },
+    {
+      "id": "exergism",
+      "namespace": "https://id.exergism.org/exergism#",
+      "ontology": "https://id.exergism.org/ontology/exergism",
+      "status": "migrating",
+      "owner_repository": "Exergism-Commons/exergism",
+      "source_path": "ontology.owl",
+      "authority_scope": "Exergism philosophical and formal vocabulary",
+      "legacy_namespaces": ["http://www.exergia.org/ns/"],
+      "tracking_issue": "https://github.com/Exergism-Commons/exergism/issues/9",
+      "term_catalog_status": "pending-canonical-migration"
+    },
+    {
+      "id": "ecl",
+      "namespace": "https://id.exergism.org/ecl#",
+      "ontology": "https://id.exergism.org/ontology/ecl",
+      "status": "migrating",
+      "owner_repository": "Exergism-Commons/exergic-commons-license",
+      "source_path": "ontology/ecl.owl.ttl",
+      "authority_scope": "ECL-specific legal, designation and governance semantics",
+      "imports": ["commons", "governance", "exergism"],
+      "legacy_namespaces": ["urn:ecl:"],
+      "tracking_issue": "https://github.com/Exergism-Commons/exergic-commons-license/issues/264",
+      "term_catalog_status": "pending-canonical-migration"
+    }
+  ]
+}
