@@ -1,3 +1,5 @@
+@prefix ec: <https://id.exergism.org/commons#> .
+@prefix ecg: <https://id.exergism.org/governance#> .
 @prefix ecf: <https://id.exergism.org/funding#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
@@ -6,20 +8,24 @@
 
 <https://id.exergism.org/ontology/funding> a owl:Ontology ;
     rdfs:label "Exergism Commons funding governance ontology"@en ;
-    owl:versionInfo "0.1.0-draft" ;
-    rdfs:comment "TBox for machine-readable funding, treasury, compensation and Endowment governance. Persistent public identifiers are issued under id.exergism.org; legal and institutional authority remains with Exergism Commons governance under applicable law and statutes."@en .
+    owl:versionInfo "0.2.0-pre1" ;
+    owl:imports <https://id.exergism.org/ontology/commons>,
+                <https://id.exergism.org/ontology/governance> ;
+    rdfs:comment "Funding-domain TBox. Shared identity/provenance primitives are reused from Commons and institutional decision/voting/conflict semantics from Governance. Persistent public identifiers are issued under id.exergism.org; legal and institutional authority remains with Exergism Commons governance under applicable law and statutes."@en .
 
-ecf:GovernanceRecord a owl:Class .
-ecf:FundingOpportunity a owl:Class ; rdfs:subClassOf ecf:GovernanceRecord .
-ecf:GovernanceDecision a owl:Class ; rdfs:subClassOf ecf:GovernanceRecord .
-ecf:FundingAcceptanceDecision a owl:Class ; rdfs:subClassOf ecf:GovernanceDecision .
-ecf:CompensationDecision a owl:Class ; rdfs:subClassOf ecf:GovernanceDecision .
-ecf:EndowmentPrincipalWithdrawalDecision a owl:Class ; rdfs:subClassOf ecf:GovernanceDecision .
-ecf:Vote a owl:Class ; rdfs:subClassOf ecf:GovernanceRecord .
-ecf:ConflictDisclosure a owl:Class ; rdfs:subClassOf ecf:GovernanceRecord .
-ecf:DiversificationPlan a owl:Class ; rdfs:subClassOf ecf:GovernanceRecord .
+# -----------------------------------------------------------------------------
+# Funding-domain record classes
+# -----------------------------------------------------------------------------
 
-ecf:InstitutionalFundingState a owl:Class ; rdfs:subClassOf ecf:GovernanceRecord .
+ecf:FundingOpportunity a owl:Class ; rdfs:subClassOf ecg:GovernanceRecord .
+
+ecf:FundingAcceptanceDecision a owl:Class ; rdfs:subClassOf ecg:GovernanceDecision .
+ecf:CompensationDecision a owl:Class ; rdfs:subClassOf ecg:GovernanceDecision .
+ecf:EndowmentPrincipalWithdrawalDecision a owl:Class ; rdfs:subClassOf ecg:GovernanceDecision .
+
+ecf:DiversificationPlan a owl:Class ; rdfs:subClassOf ecg:GovernanceRecord .
+
+ecf:InstitutionalFundingState a owl:Class ; rdfs:subClassOf ecg:GovernanceRecord .
 ecf:FundingPhaseState a owl:Class ; rdfs:subClassOf ecf:InstitutionalFundingState .
 ecf:BootstrapState a owl:Class ; rdfs:subClassOf ecf:FundingPhaseState .
 ecf:NormalState a owl:Class ; rdfs:subClassOf ecf:FundingPhaseState .
@@ -28,13 +34,10 @@ ecf:DiversifiedState a owl:Class ; rdfs:subClassOf ecf:FundingDependencyState .
 ecf:ElevatedConcentrationState a owl:Class ; rdfs:subClassOf ecf:FundingDependencyState .
 ecf:StrategicDependencyState a owl:Class ; rdfs:subClassOf ecf:FundingDependencyState .
 
-ecf:Actor a owl:Class .
-ecf:Person a owl:Class ; rdfs:subClassOf ecf:Actor .
-ecf:Organization a owl:Class ; rdfs:subClassOf ecf:Actor .
-ecf:Funder a owl:Class ; rdfs:subClassOf ecf:Organization .
+ecf:Funder a owl:Class ; rdfs:subClassOf ec:Organization .
 
 [] a owl:AllDisjointClasses ;
-    owl:members ( ecf:FundingOpportunity ecf:GovernanceDecision ecf:Vote ecf:ConflictDisclosure ecf:DiversificationPlan ecf:InstitutionalFundingState ) .
+    owl:members ( ecf:FundingOpportunity ecf:FundingAcceptanceDecision ecf:CompensationDecision ecf:EndowmentPrincipalWithdrawalDecision ecf:DiversificationPlan ecf:InstitutionalFundingState ) .
 
 [] a owl:AllDisjointClasses ;
     owl:members ( ecf:BootstrapState ecf:NormalState ) .
@@ -42,21 +45,16 @@ ecf:Funder a owl:Class ; rdfs:subClassOf ecf:Organization .
 [] a owl:AllDisjointClasses ;
     owl:members ( ecf:DiversifiedState ecf:ElevatedConcentrationState ecf:StrategicDependencyState ) .
 
-ecf:stableId a owl:DatatypeProperty, owl:FunctionalProperty ; rdfs:range xsd:string .
-ecf:title a owl:DatatypeProperty ; rdfs:range xsd:string .
-ecf:status a owl:DatatypeProperty ; rdfs:range xsd:string .
-ecf:decisionDate a owl:DatatypeProperty ; rdfs:domain ecf:GovernanceDecision ; rdfs:range xsd:date .
-ecf:rationale a owl:DatatypeProperty ; rdfs:domain ecf:GovernanceRecord ; rdfs:range xsd:string .
-ecf:approvalClass a owl:DatatypeProperty ; rdfs:domain ecf:GovernanceDecision ; rdfs:range xsd:string .
-ecf:provenance a owl:DatatypeProperty ; rdfs:range xsd:string .
-ecf:supersedes a owl:ObjectProperty ; rdfs:domain ecf:GovernanceRecord ; rdfs:range ecf:GovernanceRecord .
-ecf:reviewDue a owl:DatatypeProperty ; rdfs:domain ecf:InstitutionalFundingState ; rdfs:range xsd:date .
+# -----------------------------------------------------------------------------
+# Funding opportunity and acceptance semantics
+# -----------------------------------------------------------------------------
 
 ecf:funder a owl:ObjectProperty ; rdfs:range ecf:Funder .
 ecf:opportunity a owl:ObjectProperty ; rdfs:domain ecf:FundingAcceptanceDecision ; rdfs:range ecf:FundingOpportunity .
 ecf:amount a owl:DatatypeProperty ; rdfs:range xsd:decimal .
 ecf:currency a owl:DatatypeProperty ; rdfs:range xsd:string .
 ecf:restricted a owl:DatatypeProperty ; rdfs:range xsd:boolean .
+
 ecf:fit a owl:DatatypeProperty ; rdfs:domain ecf:FundingOpportunity ; rdfs:range xsd:decimal .
 ecf:fundingValue a owl:DatatypeProperty ; rdfs:domain ecf:FundingOpportunity ; rdfs:range xsd:decimal .
 ecf:capabilityValue a owl:DatatypeProperty ; rdfs:domain ecf:FundingOpportunity ; rdfs:range xsd:decimal .
@@ -77,21 +75,28 @@ ecf:diversificationPlan a owl:ObjectProperty ; rdfs:domain ecf:FundingAcceptance
 ecf:institutionalPhase a owl:ObjectProperty ; rdfs:domain ecf:FundingAcceptanceDecision ; rdfs:range ecf:FundingPhaseState .
 ecf:dependencyState a owl:ObjectProperty ; rdfs:domain ecf:FundingAcceptanceDecision ; rdfs:range ecf:FundingDependencyState .
 
-ecf:beneficiary a owl:ObjectProperty ; rdfs:domain ecf:CompensationDecision ; rdfs:range ecf:Person .
+# -----------------------------------------------------------------------------
+# Compensation and Endowment semantics
+# -----------------------------------------------------------------------------
+
+ecf:beneficiary a owl:ObjectProperty ; rdfs:domain ecf:CompensationDecision ; rdfs:range ec:Person .
 ecf:workBasis a owl:DatatypeProperty ; rdfs:domain ecf:CompensationDecision ; rdfs:range xsd:string .
 ecf:compensationAmount a owl:DatatypeProperty ; rdfs:domain ecf:CompensationDecision ; rdfs:range xsd:decimal .
-ecf:conflictDisclosure a owl:ObjectProperty ; rdfs:domain ecf:GovernanceDecision ; rdfs:range ecf:ConflictDisclosure .
-ecf:interestedParty a owl:ObjectProperty ; rdfs:domain ecf:ConflictDisclosure ; rdfs:range ecf:Person .
-ecf:hasVote a owl:ObjectProperty ; rdfs:domain ecf:GovernanceDecision ; rdfs:range ecf:Vote .
-ecf:voter a owl:ObjectProperty ; rdfs:domain ecf:Vote ; rdfs:range ecf:Person .
-ecf:voteValue a owl:DatatypeProperty ; rdfs:domain ecf:Vote ; rdfs:range xsd:string .
 
 ecf:principalWithdrawalAmount a owl:DatatypeProperty ; rdfs:domain ecf:EndowmentPrincipalWithdrawalDecision ; rdfs:range xsd:decimal .
 ecf:exceptionalCondition a owl:DatatypeProperty ; rdfs:domain ecf:EndowmentPrincipalWithdrawalDecision ; rdfs:range xsd:boolean .
 ecf:endowmentPurpose a owl:DatatypeProperty ; rdfs:domain ecf:EndowmentPrincipalWithdrawalDecision ; rdfs:range xsd:string .
 
-ecf:membershipEconomicShare a owl:DatatypeProperty ; rdfs:range xsd:decimal .
-
+# -----------------------------------------------------------------------------
+# Deliberate ownership boundary
+# -----------------------------------------------------------------------------
+# Funding intentionally does NOT redefine:
+# - Actor / Person / Organization;
+# - GovernanceRecord / GovernanceDecision / Vote / ConflictDeclaration;
+# - stableId / title / status / rationale / provenance / supersedes / reviewDue;
+# - decision classes or membership-economic-ownership semantics.
+# Those concepts belong to Commons, Governance, or an adopted external standard.
+#
 # Reasoning boundary:
 # - phase and dependency are separate axes: BootstrapState can coexist with StrategicDependencyState;
 # - concentration values do not themselves create state individuals by OWL inference;
