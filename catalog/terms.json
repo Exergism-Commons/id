@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "generated": false,
+  "authority_boundary": "This catalog indexes terms; it does not define their semantics. The owner_repository/source_path named by the Namespace Registry remains authoritative.",
+  "namespaces": {
+    "commons": {
+      "status": "indexed",
+      "terms": [
+        "Actor", "Person", "Organization", "Artifact", "ReleaseArtifact", "EvidenceRecord",
+        "stableId", "title", "status", "rationale", "operative", "effectiveDate", "provenance",
+        "sha256", "reviewDue", "supersedes"
+      ]
+    },
+    "governance": {
+      "status": "indexed",
+      "terms": [
+        "GovernanceRule", "GovernanceRecord", "GovernanceDecision", "DecisionClass", "Vote",
+        "ConflictDeclaration", "Delegation", "Role", "OrdinaryApproval", "QualifiedApproval",
+        "ConstitutionalAmendment", "MissionLockedAmendment", "EmergencyAction", "Member",
+        "MembershipRecord", "CandidateMember", "ActiveMember", "InactiveMember", "SuspendedMember",
+        "FormerMember", "FoundingSteward", "MissionGuardian", "Steward", "Treasurer",
+        "DomainCustodian", "RepositoryMaintainer", "Auditor", "InstitutionalAsset",
+        "PersistentIdentifierAuthority", "MissionLock", "FoundingPhase", "F0FounderLedBootstrap",
+        "F1EarlyInstitution", "F2DistributedInstitution", "decisionClass", "authorizedBy",
+        "requiresApprovalClass", "delegatedTo", "delegatedRole", "hasConflictDeclaration",
+        "interestedParty", "hasVote", "voter", "membershipSubject", "foundingPhase",
+        "missionGuardian", "governanceVersion", "decisionId", "memberRecordId", "decisionDate",
+        "voteValue", "quorumEligible", "votesFor", "votesAgainst", "abstentions", "recused",
+        "votingEligibleFrom", "missionVetoExercised"
+      ]
+    },
+    "funding": {
+      "status": "deferred-to-authoritative-publication",
+      "reason": "Funding PR #8 is still normalizing ownership against commons/governance; index after that PR lands."
+    },
+    "exergism": {
+      "status": "pending-canonical-migration",
+      "reason": "Do not index legacy exergia.org IRIs as canonical id.exergism.org terms."
+    },
+    "ecl": {
+      "status": "pending-canonical-migration",
+      "reason": "Do not index urn:ecl terms as canonical id.exergism.org terms before ECL migration lands."
+    }
+  }
+}
