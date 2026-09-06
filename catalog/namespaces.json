@@ -32,12 +32,13 @@
       "id": "funding",
       "namespace": "https://id.exergism.org/funding#",
       "ontology": "https://id.exergism.org/ontology/funding",
-      "status": "adopted",
+      "status": "migrating",
       "owner_repository": "Exergism-Commons/funding",
       "source_path": "ontology/funding.owl.ttl",
       "authority_scope": "funding-specific semantics and funding governance records",
       "imports": ["commons", "governance"],
-      "term_catalog_status": "source-authoritative"
+      "tracking_pr": "https://github.com/Exergism-Commons/funding/pull/8",
+      "term_catalog_status": "deferred-to-authoritative-publication"
     },
     {
       "id": "exergism",
