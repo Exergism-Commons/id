@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "publication_version": "0.2.0-pre1",
+  "ontology_version_iri": "https://id.exergism.org/ontology/funding/0.2.0-pre1",
+  "contexts": {
+    "legacy": "https://id.exergism.org/context/funding/0.1.0-draft",
+    "current": "https://id.exergism.org/context/funding/0.2.0-pre1"
+  },
+  "exact_artifacts": [
+    {
+      "source_path": "ontology/funding.owl.ttl",
+      "output_path": "ontology/funding-0.2.0-pre1.ttl",
+      "sha256": "f66fcc5986c0e483629bc25d7d0aa95966349fe7cb529e01eeeee7b5352edacf"
+    },
+    {
+      "source_path": "ontology/contexts/funding-context-0.1.0-draft.jsonld",
+      "output_path": "contexts/funding-context-0.1.0-draft.jsonld",
+      "sha256": "9a67a50bfcb85ee0cf08d5e93d29334f7698dc7b8351723f97f23c77dc073655"
+    },
+    {
+      "source_path": "ontology/contexts/funding-context-0.2.0-pre1.jsonld",
+      "output_path": "contexts/funding-context-0.2.0-pre1.jsonld",
+      "sha256": "05db656e5fd82b2085eeccae0c7f8adc69d310c8049c6553ccf81c5745498f87"
+    }
+  ],
+  "records": [
+    {
+      "kind": "record",
+      "stable_id": "ECF-DEC-MRG-BOOTSTRAP-001",
+      "source_path": "knowledge/decisions/ECF-DEC-MRG-BOOTSTRAP-001.jsonld",
+      "output_path": "records/ECF-DEC-MRG-BOOTSTRAP-001.jsonld",
+      "sha256": "3be099fae0d9e85916b680d391242559b21830f2747a9b1ff77f71dbe266c05b"
+    },
+    {
+      "kind": "record",
+      "stable_id": "ECF-DEC-MRG-NORMALIZATION-002",
+      "source_path": "knowledge/decisions/ECF-DEC-MRG-NORMALIZATION-002.jsonld",
+      "output_path": "records/ECF-DEC-MRG-NORMALIZATION-002.jsonld",
+      "sha256": "9a172598071c7f3b17db61a107a4a6c6d5ff8178dd256cf56ec775fb7a205442"
+    },
+    {
+      "kind": "derived-opportunity",
+      "stable_id": "ECF-OPP-COST-OPEN-CALL-2026",
+      "source_path": "data/opportunities.yaml",
+      "source_fragment": "cost-open-call-2026",
+      "output_path": "records/ECF-OPP-COST-OPEN-CALL-2026.jsonld",
+      "sha256": "58bc2ea1237b51bbc2dd96993ed8613e064c5db4eb411916fb84630ecba3034d"
+    },
+    {
+      "kind": "derived-opportunity",
+      "stable_id": "ECF-OPP-DC-EDIC-ENGAGEMENT",
+      "source_path": "data/opportunities.yaml",
+      "source_fragment": "dc-edic-engagement",
+      "output_path": "records/ECF-OPP-DC-EDIC-ENGAGEMENT.jsonld",
+      "sha256": "7f6f2fb48620da6fc31e2f1699c50e7083df47130d10f75563ca3736b7973f92"
+    },
+    {
+      "kind": "derived-opportunity",
+      "stable_id": "ECF-OPP-MSCA-PF-2027",
+      "source_path": "data/opportunities.yaml",
+      "source_fragment": "msca-pf-2027",
+      "output_path": "records/ECF-OPP-MSCA-PF-2027.jsonld",
+      "sha256": "3d59d984abe9bfef3f748816600bd3c4e8d8d363e50f708ee1f84593e2aa1c0b"
+    },
+    {
+      "kind": "derived-opportunity",
+      "stable_id": "ECF-OPP-NLNET-2026-09",
+      "source_path": "data/opportunities.yaml",
+      "source_fragment": "nlnet-2026-09",
+      "output_path": "records/ECF-OPP-NLNET-2026-09.jsonld",
+      "sha256": "fb9ebf9c0c5f3a10ccc0af750150c153f3ed18fb2ce66258e39a3831385038f1"
+    },
+    {
+      "kind": "record",
+      "stable_id": "ECF-STATE-PHASE-BOOTSTRAP-2026",
+      "source_path": "knowledge/states/ECF-STATE-PHASE-BOOTSTRAP-2026.jsonld",
+      "output_path": "records/ECF-STATE-PHASE-BOOTSTRAP-2026.jsonld",
+      "sha256": "29ec10389dd1f6a473fb1fe58ef2d1e31a9551b6019eec986093c82b18210acc"
+    }
+  ]
+}

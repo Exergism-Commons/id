@@ -1,0 +1,92 @@
+@prefix ec: <https://id.exergism.org/commons#> .
+@prefix ecg: <https://id.exergism.org/governance#> .
+@prefix ecf: <https://id.exergism.org/funding#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://id.exergism.org/ontology/funding> a owl:Ontology ;
+    rdfs:label "Exergism Commons funding governance ontology"@en ;
+    owl:versionInfo "0.2.0-pre1" ;
+    owl:versionIRI <https://id.exergism.org/ontology/funding/0.2.0-pre1> ;
+    owl:imports <https://id.exergism.org/ontology/commons/0.1-PRE2>,
+                <https://id.exergism.org/ontology/governance/0.1-PRE2> ;
+    rdfs:comment "Funding-domain TBox. Shared identity/provenance primitives and institutional Governance semantics are imported from the immutable 0.1-PRE2 version IRIs authored by Exergism-Commons/governance at commit 517c0df4c905c79ec2b2824231b40ccaa6a1b510, matching the vendored dependency closure used by Funding CI. Persistent public identifiers are issued under id.exergism.org; legal and institutional authority remains with Exergism Commons governance under applicable law and statutes."@en .
+
+# Funding-domain record classes
+ecf:FundingOpportunity a owl:Class ; rdfs:subClassOf ecg:GovernanceRecord .
+ecf:FundingAcceptanceDecision a owl:Class ; rdfs:subClassOf ecg:GovernanceDecision .
+ecf:CompensationDecision a owl:Class ; rdfs:subClassOf ecg:GovernanceDecision .
+ecf:EndowmentPrincipalWithdrawalDecision a owl:Class ; rdfs:subClassOf ecg:GovernanceDecision .
+ecf:DiversificationPlan a owl:Class ; rdfs:subClassOf ecg:GovernanceRecord .
+ecf:InstitutionalFundingState a owl:Class ; rdfs:subClassOf ecg:GovernanceRecord .
+ecf:FundingPhaseState a owl:Class ; rdfs:subClassOf ecf:InstitutionalFundingState .
+ecf:BootstrapState a owl:Class ; rdfs:subClassOf ecf:FundingPhaseState .
+ecf:NormalState a owl:Class ; rdfs:subClassOf ecf:FundingPhaseState .
+ecf:FundingDependencyState a owl:Class ; rdfs:subClassOf ecf:InstitutionalFundingState .
+ecf:DiversifiedState a owl:Class ; rdfs:subClassOf ecf:FundingDependencyState .
+ecf:ElevatedConcentrationState a owl:Class ; rdfs:subClassOf ecf:FundingDependencyState .
+ecf:StrategicDependencyState a owl:Class ; rdfs:subClassOf ecf:FundingDependencyState .
+ecf:Funder a owl:Class ; rdfs:subClassOf ec:Organization .
+
+[] a owl:AllDisjointClasses ; owl:members ( ecf:FundingOpportunity ecf:FundingAcceptanceDecision ecf:CompensationDecision ecf:EndowmentPrincipalWithdrawalDecision ecf:DiversificationPlan ecf:InstitutionalFundingState ) .
+[] a owl:AllDisjointClasses ; owl:members ( ecf:BootstrapState ecf:NormalState ) .
+[] a owl:AllDisjointClasses ; owl:members ( ecf:DiversifiedState ecf:ElevatedConcentrationState ecf:StrategicDependencyState ) .
+
+# Funding opportunity and acceptance semantics
+ecf:funder a owl:ObjectProperty ; rdfs:range ecf:Funder .
+ecf:opportunity a owl:ObjectProperty ; rdfs:domain ecf:FundingAcceptanceDecision ; rdfs:range ecf:FundingOpportunity .
+ecf:amount a owl:DatatypeProperty ; rdfs:range xsd:decimal .
+ecf:currency a owl:DatatypeProperty ; rdfs:range xsd:string .
+ecf:restricted a owl:DatatypeProperty ; rdfs:range xsd:boolean .
+
+ecf:fit a owl:DatatypeProperty ; rdfs:domain ecf:FundingOpportunity ; rdfs:range xsd:decimal .
+ecf:fundingValue a owl:DatatypeProperty ; rdfs:domain ecf:FundingOpportunity ; rdfs:range xsd:decimal .
+ecf:capabilityValue a owl:DatatypeProperty ; rdfs:domain ecf:FundingOpportunity ; rdfs:range xsd:decimal .
+ecf:strategicOptionality a owl:DatatypeProperty ; rdfs:domain ecf:FundingOpportunity ; rdfs:range xsd:decimal .
+ecf:autonomyValue a owl:DatatypeProperty ; rdfs:domain ecf:FundingOpportunity ; rdfs:range xsd:decimal .
+ecf:networkValue a owl:DatatypeProperty ; rdfs:domain ecf:FundingOpportunity ; rdfs:range xsd:decimal .
+ecf:recurrence a owl:DatatypeProperty ; rdfs:domain ecf:FundingOpportunity ; rdfs:range xsd:decimal .
+ecf:captureRisk a owl:DatatypeProperty ; rdfs:domain ecf:FundingOpportunity ; rdfs:range xsd:decimal .
+ecf:adminCost a owl:DatatypeProperty ; rdfs:domain ecf:FundingOpportunity ; rdfs:range xsd:decimal .
+ecf:executionRisk a owl:DatatypeProperty ; rdfs:domain ecf:FundingOpportunity ; rdfs:range xsd:decimal .
+ecf:rankEligible a owl:DatatypeProperty ; rdfs:domain ecf:FundingOpportunity ; rdfs:range xsd:boolean .
+
+# Concentration thresholds are derived from exact rolling-24-month evidence.
+# singleFunderConcentrationAfter is display/audit projection only and is never the
+# source used to determine threshold state or approval requirements.
+ecf:rolling24MonthTotalIncomeAfter a owl:DatatypeProperty ; rdfs:domain ecf:FundingAcceptanceDecision ; rdfs:range xsd:decimal .
+ecf:rolling24MonthSingleFunderIncomeAfter a owl:DatatypeProperty ; rdfs:domain ecf:FundingAcceptanceDecision ; rdfs:range xsd:decimal .
+ecf:concentrationWindowEnd a owl:DatatypeProperty ; rdfs:domain ecf:FundingAcceptanceDecision ; rdfs:range xsd:date .
+ecf:concentrationEvidencePath a owl:DatatypeProperty ; rdfs:domain ecf:FundingAcceptanceDecision ; rdfs:range xsd:string .
+ecf:concentrationEvidenceSha256 a owl:DatatypeProperty ; rdfs:domain ecf:FundingAcceptanceDecision ; rdfs:range xsd:string .
+ecf:singleFunderConcentrationAfter a owl:DatatypeProperty ; rdfs:domain ecf:FundingAcceptanceDecision ; rdfs:range xsd:decimal .
+
+ecf:governanceRightGranted a owl:DatatypeProperty ; rdfs:domain ecf:FundingAcceptanceDecision ; rdfs:range xsd:boolean .
+ecf:ecWideIpOwnershipGranted a owl:DatatypeProperty ; rdfs:domain ecf:FundingAcceptanceDecision ; rdfs:range xsd:boolean .
+ecf:exclusiveCoreInfrastructureRightGranted a owl:DatatypeProperty ; rdfs:domain ecf:FundingAcceptanceDecision ; rdfs:range xsd:boolean .
+ecf:diversificationPlan a owl:ObjectProperty ; rdfs:domain ecf:FundingAcceptanceDecision ; rdfs:range ecf:DiversificationPlan .
+ecf:institutionalPhase a owl:ObjectProperty ; rdfs:domain ecf:FundingAcceptanceDecision ; rdfs:range ecf:FundingPhaseState .
+ecf:dependencyState a owl:ObjectProperty ; rdfs:domain ecf:FundingAcceptanceDecision ; rdfs:range ecf:FundingDependencyState .
+
+# A diversification plan is accountable and time-bounded, not a placeholder.
+ecf:planOwner a owl:ObjectProperty ; rdfs:domain ecf:DiversificationPlan ; rdfs:range ec:Actor .
+ecf:planAction a owl:DatatypeProperty ; rdfs:domain ecf:DiversificationPlan ; rdfs:range xsd:string .
+ecf:targetDate a owl:DatatypeProperty ; rdfs:domain ecf:DiversificationPlan ; rdfs:range xsd:date .
+
+# Compensation and Endowment semantics
+ecf:beneficiary a owl:ObjectProperty ; rdfs:domain ecf:CompensationDecision ; rdfs:range ec:Person .
+ecf:workBasis a owl:DatatypeProperty ; rdfs:domain ecf:CompensationDecision ; rdfs:range xsd:string .
+ecf:compensationAmount a owl:DatatypeProperty ; rdfs:domain ecf:CompensationDecision ; rdfs:range xsd:decimal .
+ecf:principalWithdrawalAmount a owl:DatatypeProperty ; rdfs:domain ecf:EndowmentPrincipalWithdrawalDecision ; rdfs:range xsd:decimal .
+ecf:exceptionalCondition a owl:DatatypeProperty ; rdfs:domain ecf:EndowmentPrincipalWithdrawalDecision ; rdfs:range xsd:boolean .
+ecf:endowmentPurpose a owl:DatatypeProperty ; rdfs:domain ecf:EndowmentPrincipalWithdrawalDecision ; rdfs:range xsd:string .
+
+# Deliberate ownership boundary
+# Funding intentionally does NOT redefine Actor / Person / Organization,
+# GovernanceRecord / GovernanceDecision / Vote / ConflictDeclaration, shared
+# identity/provenance metadata, decision classes or membership-economic rights.
+# Concentration evidence does not itself execute a governance decision; SHACL
+# classifies required safeguards while Governance remains the authority layer.
+# No owl:propertyChainAxiom is used.
