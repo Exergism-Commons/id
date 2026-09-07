@@ -1,6 +1,6 @@
 # Third-Party and Redistribution Notices
 
-Audit date: **7 September 2026**.
+Audit date: **8 September 2026**.
 
 ## Runtime binary
 
@@ -29,7 +29,9 @@ If a VM image, appliance or other distribution actually includes Caddy binaries,
 
 ## CI-only software
 
-The repository currently uses GitHub Actions by immutable commit SHA, including `actions/checkout` and `actions/setup-go`. They are build/CI tooling and are not shipped inside the `idresolver` runtime binary.
+The repository uses GitHub Actions by immutable commit SHA, including `actions/checkout`, `actions/setup-go` and `actions/setup-python`. They are build/CI tooling and are not shipped inside the `idresolver` runtime binary.
+
+The semantic-catalog completeness audit additionally installs RDFLib from the exact upstream Git commit recorded in `requirements-semantic.txt`. RDFLib and its Python dependency closure are CI-only validation tooling: they are not vendored into this repository, embedded in the Go resolver, included in runtime release assets, or installed by the production bootstrap. Their role is deliberately independent of the text-based term-catalog generator so CI can detect catalog omissions caused by Turtle formatting changes.
 
 ## Operating-system packages
 
