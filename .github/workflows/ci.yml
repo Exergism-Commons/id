@@ -6,7 +6,7 @@ on:
   pull_request:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   test-resolver:
@@ -32,22 +32,7 @@ jobs:
           fi
       - name: Enforce persistent resolver history
         run: python3 tools/validate_persistence_history.py
-      - name: Materialize deterministic term catalog once
-        if: github.event_name == 'pull_request' && github.head_ref == 'namespace-registry-term-catalog' && github.event.pull_request.head.repo.full_name == github.repository
-        shell: bash
-        run: |
-          set -euo pipefail
-          git checkout namespace-registry-term-catalog
-          python3 tools/generate_term_catalog.py
-          python3 -m json.tool catalog/terms.json >/dev/null
-          if ! git diff --quiet -- catalog/terms.json; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add catalog/terms.json
-            git commit -m "Materialize generated semantic term catalog"
-            git push origin HEAD:namespace-registry-term-catalog
-          fi
-      - name: Verify deterministic term catalog
+      - name: Verify generated term catalog
         run: python3 tools/generate_term_catalog.py --check
       - run: go version
       - run: go test ./...
