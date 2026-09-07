@@ -5,7 +5,8 @@
 
 <https://id.exergism.org/ontology/commons> a owl:Ontology ;
     rdfs:label "Exergism Commons shared vocabulary"@en ;
-    owl:versionInfo "0.1-PRE1" ;
+    owl:versionInfo "0.1-PRE2" ;
+    owl:versionIRI <https://id.exergism.org/ontology/commons/0.1-PRE2> ;
     rdfs:comment "Minimal cross-project semantic primitives for Exergism Commons. Domain semantics belong to their owning project vocabularies. External standards should replace local primitives where their semantics are sufficient before the first stable release."@en .
 
 # Shared actor primitives. These are intentionally minimal and carry no
