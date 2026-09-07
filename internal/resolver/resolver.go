@@ -78,6 +78,9 @@ func Load(rootDir, registryPath string) (*Handler, error) {
 		if _, exists := h.routes[route.Path]; exists {
 			return nil, fmt.Errorf("duplicate route %q", route.Path)
 		}
+		if _, exists := h.aliases[route.Path]; exists {
+			return nil, fmt.Errorf("route %q collides with previously registered alias", route.Path)
+		}
 		h.routes[route.Path] = route
 		for _, alias := range route.Aliases {
 			if _, exists := h.routes[alias]; exists {

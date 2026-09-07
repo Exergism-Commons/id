@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "profile_iri": "https://id.exergism.org/governance/profile/0.1-DRAFT",
+  "governance_version": "0.1-DRAFT",
+  "governance_ontology_version": "0.1-PRE2",
+  "operative": false,
+  "institutional_state": "bootstrap",
+  "effective_date": null,
+  "adoption_record": null,
+  "declared_decision_rule_iris": [
+    "https://id.exergism.org/governance#OrdinaryApproval",
+    "https://id.exergism.org/governance#QualifiedApproval",
+    "https://id.exergism.org/governance#ConstitutionalAmendment",
+    "https://id.exergism.org/governance#MissionLockedAmendment"
+  ],
+  "emergency_action_policy_adopted": false,
+  "operative_decision_validation_available": false,
+  "downstream_contract": {
+    "proposed_records_allowed": true,
+    "approved_records_authoritative": false,
+    "operative_records_allowed": false,
+    "decision_class_is_requirement_not_proof": true,
+    "approved_or_operative_records_require_authority_evidence": true,
+    "downstream_must_fail_closed_without_supported_authority_validation": true
+  },
+  "source_paths": {
+    "governance_status": "policy/governance-status.json",
+    "decision_rules": "policy/decision-rules.json",
+    "commons_ontology": "ontology/commons.ttl",
+    "governance_ontology": "ontology/governance.ttl",
+    "governance_shapes": "ontology/governance-shapes.ttl"
+  }
+}

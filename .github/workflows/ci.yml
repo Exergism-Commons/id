@@ -10,13 +10,39 @@ permissions:
 
 jobs:
   test-resolver:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: stable
           check-latest: true
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-semantic.txt
+      - name: Install semantic catalog audit tooling
+        run: python -m pip install -r requirements-semantic.txt
+      - name: Establish trusted persistence boundary
+        shell: bash
+        env:
+          EC_ID_PUSH_BASE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            echo "EC_ID_HISTORY_BASE=$(git rev-parse HEAD^1)" >> "$GITHUB_ENV"
+          else
+            echo "EC_ID_HISTORY_BASE=${EC_ID_PUSH_BASE}" >> "$GITHUB_ENV"
+          fi
+      - name: Enforce persistent resolver history
+        run: python3 tools/validate_persistence_history.py
+      - name: Verify generated term catalog
+        run: python3 tools/generate_term_catalog.py --check
+      - name: Prove term catalog completeness from parsed RDF
+        run: python3 tools/validate_term_catalog_rdf.py
       - run: go version
       - run: go test ./...
       - run: go vet ./...
