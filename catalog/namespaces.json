@@ -1,32 +1,46 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "authority": "https://id.exergism.org/",
   "policy": {
     "resolver_is_semantic_authority": false,
     "historical_releases_are_immutable": true,
-    "namespace_reassignment_forbidden": true
+    "namespace_reassignment_forbidden": true,
+    "adopted_namespaces_require_html_and_rdf_dereferencing": true,
+    "adopted_ontologies_require_version_iri": true,
+    "adopted_namespaces_require_indexed_terms": true
   },
   "namespaces": [
     {
       "id": "commons",
       "namespace": "https://id.exergism.org/commons#",
+      "namespace_document": "https://id.exergism.org/commons",
       "ontology": "https://id.exergism.org/ontology/commons",
+      "ontology_version": "0.1-PRE2",
+      "version_iri": "https://id.exergism.org/ontology/commons/0.1-PRE2",
       "status": "adopted",
       "owner_repository": "Exergism-Commons/governance",
+      "source_commit": "517c0df4c905c79ec2b2824231b40ccaa6a1b510",
       "source_path": "ontology/commons.ttl",
       "authority_scope": "minimal cross-project primitives",
-      "term_catalog_status": "source-authoritative"
+      "imports": [],
+      "term_catalog_status": "indexed"
     },
     {
       "id": "governance",
       "namespace": "https://id.exergism.org/governance#",
+      "namespace_document": "https://id.exergism.org/governance",
       "ontology": "https://id.exergism.org/ontology/governance",
+      "ontology_version": "0.1-PRE2",
+      "version_iri": "https://id.exergism.org/ontology/governance/0.1-PRE2",
+      "authority_profile": "https://id.exergism.org/governance/profile/0.1-DRAFT",
+      "governance_version": "0.1-DRAFT",
       "status": "adopted",
       "owner_repository": "Exergism-Commons/governance",
+      "source_commit": "517c0df4c905c79ec2b2824231b40ccaa6a1b510",
       "source_path": "ontology/governance.ttl",
       "authority_scope": "Exergism Commons institutional governance",
       "imports": ["commons"],
-      "term_catalog_status": "source-authoritative"
+      "term_catalog_status": "indexed"
     },
     {
       "id": "funding",
