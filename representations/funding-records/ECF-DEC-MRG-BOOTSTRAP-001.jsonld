@@ -5,6 +5,8 @@
   "id": "ECF-DEC-MRG-BOOTSTRAP-001",
   "title": "Bootstrap machine-readable funding governance",
   "status": "proposed",
+  "operative": false,
+  "governanceVersion": "0.1-PRE1",
   "decisionDate": "2026-09-02",
   "approvalClass": "ordinary",
   "rationale": "Introduce an auditable OWL + JSON-LD + SHACL governance layer for funding, treasury, compensation and Endowment records without delegating institutional authority to code.",
