@@ -1,7 +1,7 @@
 {
   "project": "funding",
   "authority": "Exergism-Commons/funding",
-  "source_commit": "ea969f97e05f4b551db0990b38ed8c18c08d793c",
+  "source_commit": "a5f80ded5482aed234f5baab83deca90f466a412",
   "vocabulary_namespace": "https://id.exergism.org/funding#",
   "ontology_iri": "https://id.exergism.org/ontology/funding",
   "records": [
