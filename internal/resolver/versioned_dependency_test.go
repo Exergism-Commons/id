@@ -30,8 +30,8 @@ func TestGovernanceDependencySnapshotsUseImmutableCommitRoutes(t *testing.T) {
     }
 
     expected := map[string]string{
-        "/ontology/commons/06e614c21f9623658c16175a381279f9c36ef526": "representations/commons.ttl",
-        "/ontology/governance/06e614c21f9623658c16175a381279f9c36ef526": "representations/governance.ttl",
+        "/ontology/commons/06e614c21f9623658c16175a381279f9c36ef526": "representations/snapshots/commons-06e614c21f9623658c16175a381279f9c36ef526.ttl",
+        "/ontology/governance/06e614c21f9623658c16175a381279f9c36ef526": "representations/snapshots/governance-06e614c21f9623658c16175a381279f9c36ef526.ttl",
     }
     for path, file := range expected {
         var found *dependencyRoute
