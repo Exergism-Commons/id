@@ -32,6 +32,15 @@ jobs:
           fi
       - name: Enforce persistent resolver history
         run: python3 tools/validate_persistence_history.py
+      - name: Generate deterministic term catalog
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/generate_term_catalog.py
+          cp catalog/terms.json /tmp/terms.json
+          python3 tools/generate_term_catalog.py
+          cmp /tmp/terms.json catalog/terms.json
+          python3 -m json.tool catalog/terms.json >/dev/null
       - run: go version
       - run: go test ./...
       - run: go vet ./...
