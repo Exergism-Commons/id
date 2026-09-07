@@ -1,0 +1,122 @@
+name: Governance publication provenance
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "catalog/ontology-snapshots.json"
+      - "representations/commons.ttl"
+      - "representations/governance.ttl"
+      - "representations/snapshots/**"
+      - "representations/governance/**"
+      - "resolver/registry.json"
+      - ".github/workflows/governance-publication-provenance.yml"
+  pull_request:
+    paths:
+      - "catalog/ontology-snapshots.json"
+      - "representations/commons.ttl"
+      - "representations/governance.ttl"
+      - "representations/snapshots/**"
+      - "representations/governance/**"
+      - "resolver/registry.json"
+      - ".github/workflows/governance-publication-provenance.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  upstream-provenance:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch declared Governance source commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_commit="$(python -c 'import json; print(json.load(open("catalog/ontology-snapshots.json"))["source_commit"])')"
+          upstream="$RUNNER_TEMP/governance-upstream"
+          git init "$upstream"
+          git -C "$upstream" remote add origin https://github.com/Exergism-Commons/governance.git
+          git -C "$upstream" fetch --depth=1 origin "$source_commit"
+          echo "UPSTREAM_REPO=$upstream" >> "$GITHUB_ENV"
+
+      - name: Verify owner source, manifest and publication bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import os
+          import subprocess
+
+          root = Path.cwd()
+          manifest = json.loads((root / "catalog" / "ontology-snapshots.json").read_text(encoding="utf-8"))
+          assert manifest["schema_version"] == 2
+          assert manifest["source_repository"] == "Exergism-Commons/governance"
+          assert manifest["source_commit"] == "517c0df4c905c79ec2b2824231b40ccaa6a1b510"
+
+          expected = {
+              "commons-0.1-PRE2": (
+                  "ontology/commons.ttl",
+                  "representations/commons.ttl",
+                  "representations/snapshots/commons-0.1-PRE2.ttl",
+                  "https://id.exergism.org/ontology/commons/0.1-PRE2",
+              ),
+              "governance-0.1-PRE2": (
+                  "ontology/governance.ttl",
+                  "representations/governance.ttl",
+                  "representations/snapshots/governance-0.1-PRE2.ttl",
+                  "https://id.exergism.org/ontology/governance/0.1-PRE2",
+              ),
+              "governance-authority-0.1-DRAFT": (
+                  "ontology/downstream-authority.json",
+                  None,
+                  "representations/governance/downstream-authority-0.1-DRAFT.json",
+                  "https://id.exergism.org/governance/profile/0.1-DRAFT",
+              ),
+          }
+          snapshots = {entry["id"]: entry for entry in manifest["snapshots"]}
+          assert set(snapshots) == set(expected), f"snapshot coverage drift: {set(snapshots)}"
+
+          upstream = os.environ["UPSTREAM_REPO"]
+          registry = json.loads((root / "resolver" / "registry.json").read_text(encoding="utf-8"))
+          routes = {route["canonical"]: route for route in registry["routes"]}
+
+          def git_blob_sha(data: bytes) -> str:
+              return hashlib.sha1(f"blob {len(data)}\0".encode("ascii") + data).hexdigest()
+
+          for snapshot_id, (source_path, current_path, versioned_path, canonical) in expected.items():
+              metadata = snapshots[snapshot_id]
+              assert metadata["source_path"] == source_path
+              assert metadata["versioned_publication_path"] == versioned_path
+              assert metadata.get("current_publication_path") == current_path
+              assert metadata["publication_transform"] == "none"
+
+              upstream_sha = subprocess.check_output(
+                  ["git", "-C", upstream, "rev-parse", f"FETCH_HEAD:{source_path}"], text=True
+              ).strip()
+              upstream_bytes = subprocess.check_output(
+                  ["git", "-C", upstream, "show", f"FETCH_HEAD:{source_path}"]
+              )
+              assert upstream_sha == metadata["source_git_blob_sha"]
+              assert metadata["publication_git_blob_sha"] == upstream_sha
+
+              versioned_bytes = (root / versioned_path).read_bytes()
+              assert versioned_bytes == upstream_bytes, f"{snapshot_id}: versioned publication is not byte-for-byte owner source"
+              assert git_blob_sha(versioned_bytes) == upstream_sha
+
+              if current_path:
+                  current_bytes = (root / current_path).read_bytes()
+                  assert current_bytes == upstream_bytes, f"{snapshot_id}: current publication is not adopted owner source"
+
+              assert canonical in routes, f"missing resolver route for {canonical}"
+              route = routes[canonical]
+              assert "immutable" in route.get("cache_control", "").lower()
+              assert len(route["representations"]) == 1
+              assert route["representations"][0]["file"] == versioned_path
+
+          print("Governance owner-source publication provenance verified")
+          PY
