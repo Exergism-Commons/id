@@ -10,13 +10,28 @@ permissions:
 
 jobs:
   test-resolver:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: stable
           check-latest: true
+      - name: Establish trusted persistence boundary
+        shell: bash
+        env:
+          EC_ID_PUSH_BASE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            echo "EC_ID_HISTORY_BASE=$(git rev-parse HEAD^1)" >> "$GITHUB_ENV"
+          else
+            echo "EC_ID_HISTORY_BASE=${EC_ID_PUSH_BASE}" >> "$GITHUB_ENV"
+          fi
+      - name: Enforce persistent resolver history
+        run: python3 tools/validate_persistence_history.py
       - run: go version
       - run: go test ./...
       - run: go vet ./...
