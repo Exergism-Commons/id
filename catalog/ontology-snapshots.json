@@ -8,14 +8,20 @@
       "ontology_iri": "https://id.exergism.org/ontology/commons",
       "immutable_iri": "https://id.exergism.org/ontology/commons/06e614c21f9623658c16175a381279f9c36ef526",
       "source_path": "ontology/commons.ttl",
-      "git_blob_sha": "09d2965185a106e6c1428a6e0dba40dd81b640d2"
+      "source_git_blob_sha": "09d2965185a106e6c1428a6e0dba40dd81b640d2",
+      "publication_path": "representations/snapshots/commons-06e614c21f9623658c16175a381279f9c36ef526.ttl",
+      "publication_git_blob_sha": "09d2965185a106e6c1428a6e0dba40dd81b640d2",
+      "publication_transform": "none"
     },
     {
       "id": "governance-06e614c21f9623658c16175a381279f9c36ef526",
       "ontology_iri": "https://id.exergism.org/ontology/governance",
       "immutable_iri": "https://id.exergism.org/ontology/governance/06e614c21f9623658c16175a381279f9c36ef526",
       "source_path": "ontology/governance.ttl",
-      "git_blob_sha": "35cb8e846aa60688ac90710fb4d00e35e1590850"
+      "source_git_blob_sha": "35cb8e846aa60688ac90710fb4d00e35e1590850",
+      "publication_path": "representations/snapshots/governance-06e614c21f9623658c16175a381279f9c36ef526.ttl",
+      "publication_git_blob_sha": "9b9b9ea49962166b56d31c5b8893020641ad4b94",
+      "publication_transform": "rewrite the sole Commons owl:imports target from the mutable current IRI to the commit-addressed Commons snapshot IRI; all other bytes are preserved"
     }
   ]
 }
