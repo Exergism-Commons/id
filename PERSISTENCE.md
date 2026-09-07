@@ -12,25 +12,31 @@ This document defines the persistence contract for identifiers under `https://id
 
 Sharing the `id.exergism.org` host does not merge the authority of different Exergism Commons projects.
 
-Reserved project vocabulary surfaces:
+Reserved vocabulary surfaces include:
 
+- `https://id.exergism.org/commons#` — minimal shared EC primitives, owned by the Governance repository.
+- `https://id.exergism.org/governance#` — organization-level institutional governance, owned by the Governance repository.
 - `https://id.exergism.org/exergism#` — Exergism vocabulary.
 - `https://id.exergism.org/ecl#` — ECL vocabulary.
-- `https://id.exergism.org/funding#` — Exergism Commons funding-governance vocabulary.
+- `https://id.exergism.org/funding#` — funding-specific vocabulary.
 
-Reserved ontology surfaces:
+Reserved ontology surfaces include:
 
+- `https://id.exergism.org/ontology/commons`
+- `https://id.exergism.org/ontology/governance`
 - `https://id.exergism.org/ontology/exergism`
 - `https://id.exergism.org/ontology/ecl`
 - `https://id.exergism.org/ontology/funding`
 
-Reserved funding-record surface:
+Governance also publishes versioned downstream authority profiles such as:
+
+- `https://id.exergism.org/governance/profile/{governance-version}`
+
+Funding canonical records use:
 
 - `https://id.exergism.org/funding/id/{stableId}`
 
-A namespace reservation does not make a project's RDF semantics operative by itself. Each project adopts its namespace through its own reviewed, versioned canonical process. Resolver registration follows canonical project adoption; the resolver does not create ontology semantics.
-
-Future registry identifiers MUST use separately documented paths and MUST NOT silently inherit philosophical, analytical, governance or legal conclusions.
+A namespace reservation does not make RDF semantics or institutional authority operative. Each owning project adopts semantics through its own reviewed, versioned canonical process. Resolver registration follows owner adoption; the resolver MUST NOT author, rewrite or infer ontology semantics merely to make publication convenient.
 
 ## 3. Shared entity identifiers
 
@@ -40,48 +46,68 @@ The reserved family for that work is:
 
 `https://id.exergism.org/entity/...`
 
-Examples of possible subfamilies include organizations, people, projects, jurisdictions and other cross-project referents. Exact schemas MUST be separately specified before stable identifiers are minted.
+Exact schemas MUST be separately specified before stable entity identifiers are minted. Sharing an entity identifier does not merge the authority of ECL, Exergism, Funding or Governance over assertions about that entity.
 
-Project-local semantic concepts and governance records remain in their project namespaces. Sharing an entity identifier does not merge the authority of ECL, Exergism, funding or governance over assertions about that entity.
+## 4. Stability and historical enforcement
 
-## 4. Stability
+Once a public identifier is published:
 
-Once a public identifier is declared stable:
+1. it MUST NOT disappear merely because a repository is reorganized;
+2. it MUST NOT be reassigned to a different semantic resource;
+3. its canonical IRI MUST NOT change;
+4. previously published aliases and representation locations MUST remain resolvable or be preserved by an explicit compatible migration;
+5. a deprecated term SHOULD continue to resolve and SHOULD expose its deprecation/supersession relationship;
+6. provider or repository migrations MUST NOT require changing the identifier.
 
-1. it MUST NOT be reassigned to a different semantic resource;
-2. its meaning MUST NOT be silently replaced by an incompatible meaning;
-3. a moved representation MUST be reached through a maintained redirect or resolver rule;
-4. a deprecated term SHOULD continue to resolve and SHOULD expose its deprecation/supersession relationship;
-5. provider or repository migrations MUST NOT require changing the identifier.
+The repository CI enforces these guarantees against Git history. For every trusted base→HEAD transition it rejects disappearance or reassignment of previously published resolver routes, aliases and representation paths. Routes already published with an `immutable` cache contract additionally freeze both their registered metadata and representation bytes.
 
-## 5. Versioned artifacts
+This historical check is part of the persistence trust boundary; a test that merely compares current bytes with a mutable expected hash is insufficient.
 
-Mutable 'current' resolution and immutable release identification are separate concerns.
+## 5. Current ontology IRIs and OWL version IRIs
 
-For Exergism the intended pattern is:
+Mutable “current” ontology discovery and immutable ontology-version identity are separate concerns.
 
-- vocabulary namespace: `https://id.exergism.org/exergism#`
-- current ontology identifier: `https://id.exergism.org/ontology/exergism`
-- versioned ontology identifier: `https://id.exergism.org/ontology/exergism/{version}`
+For an adopted ontology series:
 
-For ECL:
+- the current ontology IRI is `https://id.exergism.org/ontology/{name}`;
+- each ontology version MUST declare an `owl:versionIRI`;
+- that version IRI MUST be dereferenceable;
+- the bytes served at a published version IRI MUST never later change.
 
-- vocabulary namespace: `https://id.exergism.org/ecl#`
-- current ontology identifier: `https://id.exergism.org/ontology/ecl`
-- versioned ontology identifier: `https://id.exergism.org/ontology/ecl/{version}`
+Current adopted examples are:
 
-For funding governance:
+- Commons ontology: `https://id.exergism.org/ontology/commons`
+- Commons PRE2 version: `https://id.exergism.org/ontology/commons/0.1-PRE2`
+- Governance ontology: `https://id.exergism.org/ontology/governance`
+- Governance PRE2 version: `https://id.exergism.org/ontology/governance/0.1-PRE2`
 
-- vocabulary namespace: `https://id.exergism.org/funding#`
-- current ontology identifier: `https://id.exergism.org/ontology/funding`
-- versioned ontology identifier: `https://id.exergism.org/ontology/funding/{version}`
-- canonical record pattern: `https://id.exergism.org/funding/id/{stableId}`
+The Governance PRE2 artifact imports the Commons PRE2 `owl:versionIRI`, so its published OWL import closure is reproducible without the resolver modifying owner-authored bytes.
 
-A versioned identifier MUST resolve to the semantic artifact for that version and MUST NOT later be repointed to different bytes while claiming to represent the same immutable release.
+Intended equivalent patterns for migrating domains are:
 
-Versioned resolver routes SHOULD use long-lived immutable cache directives once their published bytes and checksums have been fixed. Non-versioned current routes MAY use shorter caching and may advance only through an explicit release/publishing change.
+- Exergism: `https://id.exergism.org/ontology/exergism/{version}`
+- ECL: `https://id.exergism.org/ontology/ecl/{version}`
+- Funding: `https://id.exergism.org/ontology/funding/{version}`
 
-## 6. No retroactive namespace rewriting
+A Git commit SHA may be recorded as publication provenance, but a repository commit path is not a substitute for the ontology's owner-authored `owl:versionIRI`.
+
+## 6. Publication provenance
+
+For copied semantic artifacts, `id` MUST be able to prove which authoritative bytes it publishes.
+
+At minimum a publication manifest records:
+
+- owner repository;
+- authoritative source commit;
+- source path;
+- source Git blob SHA;
+- current and/or versioned publication path;
+- published Git blob SHA;
+- declared transformation, which MUST be `none` for owner-authored ontology/version artifacts unless the owner has explicitly adopted a separate derived-artifact contract.
+
+CI fetches the authoritative owner commit and verifies source blob == manifest == published bytes. `id` MUST NOT repair, rewrite or closure-freeze another repository's ontology locally; such semantic changes belong in the owning repository first.
+
+## 7. No retroactive namespace rewriting
 
 Historical releases are not silently rewritten merely because Exergism Commons later adopts a better namespace. If a release was published with a different identifier scheme, migration is recorded in a subsequent release and compatibility mappings are published where appropriate.
 
@@ -89,53 +115,50 @@ In particular:
 
 - historical Exergism artifacts using `http://www.exergia.org/ns/` are not rewritten in place;
 - historical ECL artifacts using `urn:ecl:` are not rewritten in place;
-- funding's machine-readable layer should adopt `id.exergism.org` before its first canonical release rather than creating a new stable `urn:ecf:` island.
+- an already published Funding JSON-LD record must not acquire new RDF meaning merely because a mutable external context changes; historical records require an immutable/versioned context or an otherwise content-bound expansion contract.
 
-## 7. Dereferencing and content negotiation
+## 8. Dereferencing and content negotiation
 
 The service SHOULD provide a useful representation when an HTTP(S) identifier is dereferenced.
 
-The native resolver in this repository performs server-side content negotiation from the HTTP `Accept` header. Negotiated resources MUST return `Vary: Accept`. A representation MUST advertise the media type of the bytes actually returned. Unsupported requested media types SHOULD return `406 Not Acceptable` rather than silently pretending that HTML is RDF.
+The native resolver performs server-side content negotiation from `Accept`. Negotiated resources MUST return `Vary: Accept` when multiple representations exist. A representation MUST advertise the media type of the bytes actually returned. Unsupported requested media types SHOULD return `406 Not Acceptable` rather than silently returning HTML as RDF.
 
-Representations MAY include, as applicable:
+Representations MAY include:
 
 - `text/html`
 - `text/turtle`
 - `application/rdf+xml`
 - `application/ld+json`
+- `application/json`
 
-A representation is not considered published merely because the resolver supports its MIME type. It becomes available only when the corresponding approved artifact is registered and deployed.
+For an adopted hash vocabulary such as `https://id.exergism.org/commons#Person`, the fragment is client-side and the HTTP request resolves the namespace document (`/commons`). Adopted namespace documents MUST provide both a human-readable representation and at least one RDF representation.
 
-## 8. Hash vocabularies
+## 9. Namespace and term catalogs
 
-Vocabulary terms MAY use hash IRIs, for example:
+`catalog/namespaces.json` records ownership, canonical namespace and ontology IRIs, lifecycle state, imports, source provenance and version information. `catalog/terms.json` is a discoverability index and does not define semantics.
 
-`https://id.exergism.org/exergism#Autonomy`
+For an adopted namespace, the catalog contract requires:
 
-or:
+- a resolvable HTML + RDF namespace document;
+- a resolvable current ontology IRI;
+- a resolvable immutable `owl:versionIRI`;
+- an owner repository/source path/source commit;
+- indexed terms with owner/type/version/dependency metadata.
 
-`https://id.exergism.org/funding#FundingAcceptanceDecision`
+Catalog endpoints are themselves published through the resolver. Catalog data MUST NOT be used to mint semantic definitions that do not exist in the authoritative owner ontology.
 
-The fragment is client-side; the HTTP request is made for the exact namespace document path, such as:
+## 10. Resolver registry
 
-`https://id.exergism.org/exergism`
+Resolver behavior is declarative and reviewable in `resolver/registry.json`. Registered routes define canonical IRI, aliases, cache policy, representations, media types and artifact paths.
 
-or:
+The loader MUST reject collisions among route paths, aliases and public representation paths in either insertion order. A previously published canonical route cannot be silently shadowed by a redirect alias.
 
-`https://id.exergism.org/funding`
+Registering a representation does not create semantic authority. In particular, registering RDF for a project requires an approved owner artifact and provenance binding.
 
-The production resolver SHOULD serve that exact path directly. A trailing-slash alias MAY redirect permanently to the canonical no-slash path, but infrastructure convenience MUST NOT redefine the persistent namespace.
-
-## 9. Resolver registry
-
-Resolver behavior SHOULD be declarative and reviewable. Registered routes define the canonical IRI, approved aliases, cache policy, representations, media types and artifact paths.
-
-Changing a resolver rule MUST NOT create new project semantics by itself. In particular, registering an RDF serialization for a project requires that the canonical project has already adopted and published the relevant ontology identifiers.
-
-The resolver MAY reserve or serve human-readable bootstrap routes before an RDF representation is available, provided that doing so does not falsely claim that a project has adopted unpublished semantics.
-
-## 10. Governance
+## 11. Governance and deployment boundary
 
 Cross-project rules for control and stewardship of the identifier service belong to Exergism Commons organization governance. Project-specific ontology semantics remain controlled by the project that owns the ontology.
 
-Changing this policy does not by itself modify an already released ontology, license, Schedule, patent instrument, funding decision or other immutable project artifact.
+A merge into the `id` repository does not by itself prove that production is serving the new resolver state. Any cross-repository adoption that depends on new identifier routes MUST require a post-deployment smoke test of the actual HTTPS endpoints, media negotiation and immutable representation hashes before the downstream dependency is considered available.
+
+Changing this policy does not by itself modify an already released ontology, license, Schedule, patent instrument, Funding decision or other immutable project artifact.
