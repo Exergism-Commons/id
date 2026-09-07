@@ -13,9 +13,58 @@ type publicationManifest struct {
 	Records             []string `json:"records"`
 }
 
+type namespaceCatalog struct {
+	Namespaces []struct {
+		ID       string `json:"id"`
+		Ontology string `json:"ontology"`
+		Status   string `json:"status"`
+	} `json:"namespaces"`
+}
+
 func TestRepositoryRegistryLoadsAllRegisteredRepresentations(t *testing.T) {
 	if _, err := Load("../..", "../../resolver/registry.json"); err != nil {
 		t.Fatalf("repository registry must load with every registered representation present: %v", err)
+	}
+}
+
+func TestAdoptedOntologyIRIsAreResolvable(t *testing.T) {
+	h, err := Load("../..", "../../resolver/registry.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	raw, err := os.ReadFile("../../catalog/namespaces.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var catalog namespaceCatalog
+	if err := json.Unmarshal(raw, &catalog); err != nil {
+		t.Fatalf("decode namespace catalog: %v", err)
+	}
+
+	for _, namespace := range catalog.Namespaces {
+		if namespace.Status != "adopted" || namespace.Ontology == "" {
+			continue
+		}
+		path := strings.TrimPrefix(namespace.Ontology, "https://id.exergism.org")
+		route, ok := h.routes[path]
+		if !ok {
+			t.Errorf("adopted ontology %s (%s) is not registered", namespace.ID, namespace.Ontology)
+			continue
+		}
+		hasHTML := false
+		hasTurtle := false
+		for _, rep := range route.Representations {
+			if strings.HasPrefix(rep.MediaType, "text/html") {
+				hasHTML = true
+			}
+			if strings.HasPrefix(rep.MediaType, "text/turtle") {
+				hasTurtle = true
+			}
+		}
+		if !hasHTML || !hasTurtle {
+			t.Errorf("adopted ontology %s must expose both HTML and Turtle representations", namespace.Ontology)
+		}
 	}
 }
 

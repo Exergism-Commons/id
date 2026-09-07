@@ -1,0 +1,26 @@
+@prefix ec: <https://id.exergism.org/commons#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://id.exergism.org/ontology/commons> a owl:Ontology ;
+    rdfs:label "Exergism Commons shared vocabulary"@en ;
+    owl:versionInfo "0.1-PRE1" ;
+    rdfs:comment "Minimal cross-project semantic primitives for Exergism Commons. Domain semantics belong to their owning project vocabularies. External standards should replace local primitives where their semantics are sufficient before the first stable release."@en .
+
+ec:Actor a owl:Class .
+ec:Person a owl:Class ; rdfs:subClassOf ec:Actor .
+ec:Organization a owl:Class ; rdfs:subClassOf ec:Actor .
+ec:Artifact a owl:Class .
+ec:ReleaseArtifact a owl:Class ; rdfs:subClassOf ec:Artifact .
+ec:EvidenceRecord a owl:Class ; rdfs:subClassOf ec:Artifact .
+ec:stableId a owl:DatatypeProperty, owl:FunctionalProperty ; rdfs:range xsd:string .
+ec:title a owl:DatatypeProperty ; rdfs:range xsd:string .
+ec:status a owl:DatatypeProperty ; rdfs:range xsd:string .
+ec:rationale a owl:DatatypeProperty ; rdfs:range xsd:string .
+ec:operative a owl:DatatypeProperty ; rdfs:range xsd:boolean .
+ec:effectiveDate a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+ec:provenance a owl:DatatypeProperty ; rdfs:range xsd:string .
+ec:sha256 a owl:DatatypeProperty ; rdfs:range xsd:string .
+ec:reviewDue a owl:DatatypeProperty ; rdfs:range xsd:date .
+ec:supersedes a owl:ObjectProperty ; rdfs:range owl:Thing .

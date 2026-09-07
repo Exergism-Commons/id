@@ -1,0 +1,70 @@
+@prefix ec: <https://id.exergism.org/commons#> .
+@prefix ecg: <https://id.exergism.org/governance#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://id.exergism.org/ontology/governance> a owl:Ontology ;
+    rdfs:label "Exergism Commons governance ontology"@en ;
+    owl:versionInfo "0.1-PRE1" ;
+    owl:imports <https://id.exergism.org/ontology/commons> ;
+    rdfs:comment "Organization-level institutional governance vocabulary. It models explicit decisions, decision classes, Membership, roles, delegations, conflicts and governance records without manufacturing authority from repository permissions, funding, employment or graph reachability."@en .
+
+ecg:GovernanceRule a owl:Class .
+ecg:GovernanceRecord a owl:Class .
+ecg:GovernanceDecision a owl:Class ; rdfs:subClassOf ecg:GovernanceRecord .
+ecg:DecisionClass a owl:Class .
+ecg:Vote a owl:Class ; rdfs:subClassOf ecg:GovernanceRecord .
+ecg:ConflictDeclaration a owl:Class ; rdfs:subClassOf ecg:GovernanceRecord .
+ecg:Delegation a owl:Class ; rdfs:subClassOf ecg:GovernanceRecord .
+ecg:Role a owl:Class .
+ecg:OrdinaryApproval a ecg:DecisionClass ; rdfs:label "Ordinary Approval"@en .
+ecg:QualifiedApproval a ecg:DecisionClass ; rdfs:label "Qualified Approval"@en .
+ecg:ConstitutionalAmendment a ecg:DecisionClass ; rdfs:label "Constitutional Amendment"@en .
+ecg:MissionLockedAmendment a ecg:DecisionClass ; rdfs:label "Mission-Locked Amendment"@en .
+ecg:EmergencyAction a ecg:DecisionClass ; rdfs:label "Emergency Action"@en .
+ecg:Member a owl:Class ; rdfs:subClassOf ec:Person .
+ecg:MembershipRecord a owl:Class ; rdfs:subClassOf ecg:GovernanceRecord .
+ecg:CandidateMember a owl:Class ; rdfs:subClassOf ecg:Member .
+ecg:ActiveMember a owl:Class ; rdfs:subClassOf ecg:Member .
+ecg:InactiveMember a owl:Class ; rdfs:subClassOf ecg:Member .
+ecg:SuspendedMember a owl:Class ; rdfs:subClassOf ecg:Member .
+ecg:FormerMember a owl:Class ; rdfs:subClassOf ecg:Member .
+ecg:FoundingSteward a ecg:Role ; rdfs:label "Founding Steward"@en .
+ecg:MissionGuardian a ecg:Role ; rdfs:label "Mission Guardian"@en .
+ecg:Steward a ecg:Role ; rdfs:label "Steward"@en .
+ecg:Treasurer a ecg:Role ; rdfs:label "Treasurer"@en .
+ecg:DomainCustodian a ecg:Role ; rdfs:label "Domain Custodian"@en .
+ecg:RepositoryMaintainer a ecg:Role ; rdfs:label "Repository Maintainer"@en .
+ecg:Auditor a ecg:Role ; rdfs:label "Auditor / Reviewer"@en .
+ecg:InstitutionalAsset a owl:Class .
+ecg:PersistentIdentifierAuthority a owl:Class ; rdfs:subClassOf ecg:InstitutionalAsset .
+ecg:MissionLock a owl:Class .
+ecg:FoundingPhase a owl:Class .
+ecg:F0FounderLedBootstrap a ecg:FoundingPhase ; rdfs:label "F0 founder-led bootstrap"@en .
+ecg:F1EarlyInstitution a ecg:FoundingPhase ; rdfs:label "F1 early institution"@en .
+ecg:F2DistributedInstitution a ecg:FoundingPhase ; rdfs:label "F2 distributed institution"@en .
+ecg:decisionClass a owl:ObjectProperty ; rdfs:domain ecg:GovernanceDecision ; rdfs:range ecg:DecisionClass .
+ecg:authorizedBy a owl:ObjectProperty ; rdfs:domain ecg:GovernanceRecord .
+ecg:requiresApprovalClass a owl:ObjectProperty ; rdfs:range ecg:DecisionClass .
+ecg:delegatedTo a owl:ObjectProperty ; rdfs:domain ecg:Delegation ; rdfs:range ec:Actor .
+ecg:delegatedRole a owl:ObjectProperty ; rdfs:domain ecg:Delegation ; rdfs:range ecg:Role .
+ecg:hasConflictDeclaration a owl:ObjectProperty ; rdfs:domain ecg:GovernanceDecision ; rdfs:range ecg:ConflictDeclaration .
+ecg:interestedParty a owl:ObjectProperty ; rdfs:domain ecg:ConflictDeclaration ; rdfs:range ec:Person .
+ecg:hasVote a owl:ObjectProperty ; rdfs:domain ecg:GovernanceDecision ; rdfs:range ecg:Vote .
+ecg:voter a owl:ObjectProperty ; rdfs:domain ecg:Vote ; rdfs:range ec:Person .
+ecg:membershipSubject a owl:ObjectProperty ; rdfs:domain ecg:MembershipRecord ; rdfs:range ecg:Member .
+ecg:foundingPhase a owl:ObjectProperty ; rdfs:range ecg:FoundingPhase .
+ecg:missionGuardian a owl:ObjectProperty ; rdfs:range ecg:Role .
+ecg:governanceVersion a owl:DatatypeProperty ; rdfs:range xsd:string .
+ecg:decisionId a owl:DatatypeProperty ; rdfs:domain ecg:GovernanceDecision ; rdfs:range xsd:string .
+ecg:memberRecordId a owl:DatatypeProperty ; rdfs:domain ecg:MembershipRecord ; rdfs:range xsd:string .
+ecg:decisionDate a owl:DatatypeProperty ; rdfs:domain ecg:GovernanceDecision ; rdfs:range xsd:date .
+ecg:voteValue a owl:DatatypeProperty ; rdfs:domain ecg:Vote ; rdfs:range xsd:string .
+ecg:quorumEligible a owl:DatatypeProperty ; rdfs:range xsd:nonNegativeInteger .
+ecg:votesFor a owl:DatatypeProperty ; rdfs:range xsd:nonNegativeInteger .
+ecg:votesAgainst a owl:DatatypeProperty ; rdfs:range xsd:nonNegativeInteger .
+ecg:abstentions a owl:DatatypeProperty ; rdfs:range xsd:nonNegativeInteger .
+ecg:recused a owl:DatatypeProperty ; rdfs:range xsd:nonNegativeInteger .
+ecg:votingEligibleFrom a owl:DatatypeProperty ; rdfs:range xsd:dateTime .
+ecg:missionVetoExercised a owl:DatatypeProperty ; rdfs:range xsd:boolean .
