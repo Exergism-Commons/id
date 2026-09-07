@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestAdoptedHashNamespacesHaveResolvableDocuments(t *testing.T) {
+func TestAdoptedHashNamespacesHaveResolvableHTMLAndRDFDocuments(t *testing.T) {
 	h, err := Load("../..", "../../resolver/registry.json")
 	if err != nil {
 		t.Fatal(err)
@@ -40,14 +40,22 @@ func TestAdoptedHashNamespacesHaveResolvableDocuments(t *testing.T) {
 			continue
 		}
 		hasHTML := false
+		hasRDF := false
 		for _, rep := range route.Representations {
 			if strings.HasPrefix(rep.MediaType, "text/html") {
 				hasHTML = true
-				break
+			}
+			if strings.HasPrefix(rep.MediaType, "text/turtle") ||
+				strings.HasPrefix(rep.MediaType, "application/ld+json") ||
+				strings.HasPrefix(rep.MediaType, "application/rdf+xml") {
+				hasRDF = true
 			}
 		}
 		if !hasHTML {
 			t.Errorf("adopted namespace %s document must expose HTML", namespace.ID)
+		}
+		if !hasRDF {
+			t.Errorf("adopted namespace %s document must expose an RDF representation", namespace.ID)
 		}
 	}
 }
