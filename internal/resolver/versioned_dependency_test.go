@@ -17,7 +17,7 @@ type dependencyRoute struct {
     } `json:"representations"`
 }
 
-func TestGovernanceDependencySnapshotsUseImmutableCommitRoutes(t *testing.T) {
+func TestGovernanceDependencySnapshotsUseAuthoritativeVersionIRIs(t *testing.T) {
     raw, err := os.ReadFile("../../resolver/registry.json")
     if err != nil {
         t.Fatal(err)
@@ -30,8 +30,8 @@ func TestGovernanceDependencySnapshotsUseImmutableCommitRoutes(t *testing.T) {
     }
 
     expected := map[string]string{
-        "/ontology/commons/06e614c21f9623658c16175a381279f9c36ef526": "representations/snapshots/commons-06e614c21f9623658c16175a381279f9c36ef526.ttl",
-        "/ontology/governance/06e614c21f9623658c16175a381279f9c36ef526": "representations/snapshots/governance-06e614c21f9623658c16175a381279f9c36ef526.ttl",
+        "/ontology/commons/0.1-PRE2":    "representations/snapshots/commons-0.1-PRE2.ttl",
+        "/ontology/governance/0.1-PRE2": "representations/snapshots/governance-0.1-PRE2.ttl",
     }
     for path, file := range expected {
         var found *dependencyRoute
@@ -42,7 +42,7 @@ func TestGovernanceDependencySnapshotsUseImmutableCommitRoutes(t *testing.T) {
             }
         }
         if found == nil {
-            t.Fatalf("immutable dependency route %s is not registered", path)
+            t.Fatalf("version IRI route %s is not registered", path)
         }
         if found.Canonical != "https://id.exergism.org"+path {
             t.Fatalf("route %s canonical mismatch: %s", path, found.Canonical)
