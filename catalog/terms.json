@@ -1,45 +1,705 @@
 {
-  "schema_version": 1,
-  "generated": false,
-  "authority_boundary": "This catalog indexes terms; it does not define their semantics. The owner_repository/source_path named by the Namespace Registry remains authoritative.",
+  "authority_boundary": "Discoverability only; owner_repository/source_path in the Namespace Registry remains semantic authority.",
+  "generated": true,
   "namespaces": {
     "commons": {
-      "status": "indexed",
+      "dependencies": [],
+      "ontology_version": "0.1-PRE2",
+      "owner_repository": "Exergism-Commons/governance",
+      "source_commit": "517c0df4c905c79ec2b2824231b40ccaa6a1b510",
+      "source_path": "ontology/commons.ttl",
       "terms": [
-        "Actor", "Person", "Organization", "Artifact", "ReleaseArtifact", "EvidenceRecord",
-        "stableId", "title", "status", "rationale", "operative", "effectiveDate", "provenance",
-        "sha256", "reviewDue", "supersedes"
+        {
+          "description": "Actor in the Exergism Commons commons vocabulary.",
+          "iri": "https://id.exergism.org/commons#Actor",
+          "label": "Actor",
+          "local_name": "Actor",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "Artifact in the Exergism Commons commons vocabulary.",
+          "iri": "https://id.exergism.org/commons#Artifact",
+          "label": "Artifact",
+          "local_name": "Artifact",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "EvidenceRecord in the Exergism Commons commons vocabulary.",
+          "iri": "https://id.exergism.org/commons#EvidenceRecord",
+          "label": "EvidenceRecord",
+          "local_name": "EvidenceRecord",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "Organization in the Exergism Commons commons vocabulary.",
+          "iri": "https://id.exergism.org/commons#Organization",
+          "label": "Organization",
+          "local_name": "Organization",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "Person in the Exergism Commons commons vocabulary.",
+          "iri": "https://id.exergism.org/commons#Person",
+          "label": "Person",
+          "local_name": "Person",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "ReleaseArtifact in the Exergism Commons commons vocabulary.",
+          "iri": "https://id.exergism.org/commons#ReleaseArtifact",
+          "label": "ReleaseArtifact",
+          "local_name": "ReleaseArtifact",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "effectiveDate in the Exergism Commons commons vocabulary.",
+          "iri": "https://id.exergism.org/commons#effectiveDate",
+          "label": "effectiveDate",
+          "local_name": "effectiveDate",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "operative in the Exergism Commons commons vocabulary.",
+          "iri": "https://id.exergism.org/commons#operative",
+          "label": "operative",
+          "local_name": "operative",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "provenance in the Exergism Commons commons vocabulary.",
+          "iri": "https://id.exergism.org/commons#provenance",
+          "label": "provenance",
+          "local_name": "provenance",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "rationale in the Exergism Commons commons vocabulary.",
+          "iri": "https://id.exergism.org/commons#rationale",
+          "label": "rationale",
+          "local_name": "rationale",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "reviewDue in the Exergism Commons commons vocabulary.",
+          "iri": "https://id.exergism.org/commons#reviewDue",
+          "label": "reviewDue",
+          "local_name": "reviewDue",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "sha256 in the Exergism Commons commons vocabulary.",
+          "iri": "https://id.exergism.org/commons#sha256",
+          "label": "sha256",
+          "local_name": "sha256",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "stableId in the Exergism Commons commons vocabulary.",
+          "iri": "https://id.exergism.org/commons#stableId",
+          "label": "stableId",
+          "local_name": "stableId",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "status in the Exergism Commons commons vocabulary.",
+          "iri": "https://id.exergism.org/commons#status",
+          "label": "status",
+          "local_name": "status",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "supersedes in the Exergism Commons commons vocabulary.",
+          "iri": "https://id.exergism.org/commons#supersedes",
+          "label": "supersedes",
+          "local_name": "supersedes",
+          "mappings": [],
+          "rdf_type": "owl:ObjectProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "title in the Exergism Commons commons vocabulary.",
+          "iri": "https://id.exergism.org/commons#title",
+          "label": "title",
+          "local_name": "title",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        }
       ]
-    },
-    "governance": {
-      "status": "indexed",
-      "terms": [
-        "GovernanceRule", "GovernanceRecord", "GovernanceDecision", "DecisionClass", "Vote",
-        "ConflictDeclaration", "Delegation", "Role", "OrdinaryApproval", "QualifiedApproval",
-        "ConstitutionalAmendment", "MissionLockedAmendment", "EmergencyAction", "Member",
-        "MembershipRecord", "CandidateMember", "ActiveMember", "InactiveMember", "SuspendedMember",
-        "FormerMember", "FoundingSteward", "MissionGuardian", "Steward", "Treasurer",
-        "DomainCustodian", "RepositoryMaintainer", "Auditor", "InstitutionalAsset",
-        "PersistentIdentifierAuthority", "MissionLock", "FoundingPhase", "F0FounderLedBootstrap",
-        "F1EarlyInstitution", "F2DistributedInstitution", "decisionClass", "authorizedBy",
-        "requiresApprovalClass", "delegatedTo", "delegatedRole", "hasConflictDeclaration",
-        "interestedParty", "hasVote", "voter", "membershipSubject", "foundingPhase",
-        "missionGuardian", "governanceVersion", "decisionId", "memberRecordId", "decisionDate",
-        "voteValue", "quorumEligible", "votesFor", "votesAgainst", "abstentions", "recused",
-        "votingEligibleFrom", "missionVetoExercised"
-      ]
-    },
-    "funding": {
-      "status": "deferred-to-authoritative-publication",
-      "reason": "Funding PR #8 is still normalizing ownership against commons/governance; index after that PR lands."
-    },
-    "exergism": {
-      "status": "pending-canonical-migration",
-      "reason": "Do not index legacy exergia.org IRIs as canonical id.exergism.org terms."
     },
     "ecl": {
-      "status": "pending-canonical-migration",
-      "reason": "Do not index urn:ecl terms as canonical id.exergism.org terms before ECL migration lands."
+      "reason": "Do not index urn:ecl terms as canonical id.exergism.org terms before ECL migration lands.",
+      "status": "pending-canonical-migration"
+    },
+    "exergism": {
+      "reason": "Do not index legacy exergia.org IRIs as canonical id.exergism.org terms.",
+      "status": "pending-canonical-migration"
+    },
+    "funding": {
+      "reason": "Funding PR #8 is still normalizing ownership against commons/governance; index after the owning source lands.",
+      "status": "deferred-to-authoritative-publication"
+    },
+    "governance": {
+      "dependencies": [
+        "commons"
+      ],
+      "ontology_version": "0.1-PRE2",
+      "owner_repository": "Exergism-Commons/governance",
+      "source_commit": "517c0df4c905c79ec2b2824231b40ccaa6a1b510",
+      "source_path": "ontology/governance.ttl",
+      "terms": [
+        {
+          "description": "ActiveMember in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#ActiveMember",
+          "label": "ActiveMember",
+          "local_name": "ActiveMember",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "Auditor / Reviewer in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#Auditor",
+          "label": "Auditor / Reviewer",
+          "local_name": "Auditor",
+          "mappings": [],
+          "rdf_type": "ecg:Role",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "CandidateMember in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#CandidateMember",
+          "label": "CandidateMember",
+          "local_name": "CandidateMember",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "ConflictDeclaration in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#ConflictDeclaration",
+          "label": "ConflictDeclaration",
+          "local_name": "ConflictDeclaration",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "Constitutional Amendment in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#ConstitutionalAmendment",
+          "label": "Constitutional Amendment",
+          "local_name": "ConstitutionalAmendment",
+          "mappings": [],
+          "rdf_type": "ecg:DecisionClass",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "DecisionClass in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#DecisionClass",
+          "label": "DecisionClass",
+          "local_name": "DecisionClass",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "Delegation in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#Delegation",
+          "label": "Delegation",
+          "local_name": "Delegation",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "Domain Custodian in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#DomainCustodian",
+          "label": "Domain Custodian",
+          "local_name": "DomainCustodian",
+          "mappings": [],
+          "rdf_type": "ecg:Role",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "Emergency Action in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#EmergencyAction",
+          "label": "Emergency Action",
+          "local_name": "EmergencyAction",
+          "mappings": [],
+          "rdf_type": "ecg:DecisionClass",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "F0 founder-led bootstrap in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#F0FounderLedBootstrap",
+          "label": "F0 founder-led bootstrap",
+          "local_name": "F0FounderLedBootstrap",
+          "mappings": [],
+          "rdf_type": "ecg:FoundingPhase",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "F1 early institution in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#F1EarlyInstitution",
+          "label": "F1 early institution",
+          "local_name": "F1EarlyInstitution",
+          "mappings": [],
+          "rdf_type": "ecg:FoundingPhase",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "F2 distributed institution in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#F2DistributedInstitution",
+          "label": "F2 distributed institution",
+          "local_name": "F2DistributedInstitution",
+          "mappings": [],
+          "rdf_type": "ecg:FoundingPhase",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "FormerMember in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#FormerMember",
+          "label": "FormerMember",
+          "local_name": "FormerMember",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "FoundingPhase in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#FoundingPhase",
+          "label": "FoundingPhase",
+          "local_name": "FoundingPhase",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "Founding Steward in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#FoundingSteward",
+          "label": "Founding Steward",
+          "local_name": "FoundingSteward",
+          "mappings": [],
+          "rdf_type": "ecg:Role",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "GovernanceDecision in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#GovernanceDecision",
+          "label": "GovernanceDecision",
+          "local_name": "GovernanceDecision",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "GovernanceRecord in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#GovernanceRecord",
+          "label": "GovernanceRecord",
+          "local_name": "GovernanceRecord",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "GovernanceRule in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#GovernanceRule",
+          "label": "GovernanceRule",
+          "local_name": "GovernanceRule",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "InactiveMember in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#InactiveMember",
+          "label": "InactiveMember",
+          "local_name": "InactiveMember",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "InstitutionalAsset in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#InstitutionalAsset",
+          "label": "InstitutionalAsset",
+          "local_name": "InstitutionalAsset",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "Member in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#Member",
+          "label": "Member",
+          "local_name": "Member",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "MembershipRecord in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#MembershipRecord",
+          "label": "MembershipRecord",
+          "local_name": "MembershipRecord",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "Mission Guardian in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#MissionGuardian",
+          "label": "Mission Guardian",
+          "local_name": "MissionGuardian",
+          "mappings": [],
+          "rdf_type": "ecg:Role",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "MissionLock in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#MissionLock",
+          "label": "MissionLock",
+          "local_name": "MissionLock",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "Mission-Locked Amendment in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#MissionLockedAmendment",
+          "label": "Mission-Locked Amendment",
+          "local_name": "MissionLockedAmendment",
+          "mappings": [],
+          "rdf_type": "ecg:DecisionClass",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "Ordinary Approval in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#OrdinaryApproval",
+          "label": "Ordinary Approval",
+          "local_name": "OrdinaryApproval",
+          "mappings": [],
+          "rdf_type": "ecg:DecisionClass",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "PersistentIdentifierAuthority in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#PersistentIdentifierAuthority",
+          "label": "PersistentIdentifierAuthority",
+          "local_name": "PersistentIdentifierAuthority",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "Qualified Approval in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#QualifiedApproval",
+          "label": "Qualified Approval",
+          "local_name": "QualifiedApproval",
+          "mappings": [],
+          "rdf_type": "ecg:DecisionClass",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "Repository Maintainer in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#RepositoryMaintainer",
+          "label": "Repository Maintainer",
+          "local_name": "RepositoryMaintainer",
+          "mappings": [],
+          "rdf_type": "ecg:Role",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "Role in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#Role",
+          "label": "Role",
+          "local_name": "Role",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "Steward in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#Steward",
+          "label": "Steward",
+          "local_name": "Steward",
+          "mappings": [],
+          "rdf_type": "ecg:Role",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "SuspendedMember in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#SuspendedMember",
+          "label": "SuspendedMember",
+          "local_name": "SuspendedMember",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "Treasurer in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#Treasurer",
+          "label": "Treasurer",
+          "local_name": "Treasurer",
+          "mappings": [],
+          "rdf_type": "ecg:Role",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "Vote in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#Vote",
+          "label": "Vote",
+          "local_name": "Vote",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "abstentions in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#abstentions",
+          "label": "abstentions",
+          "local_name": "abstentions",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "authorizedBy in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#authorizedBy",
+          "label": "authorizedBy",
+          "local_name": "authorizedBy",
+          "mappings": [],
+          "rdf_type": "owl:ObjectProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "decisionClass in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#decisionClass",
+          "label": "decisionClass",
+          "local_name": "decisionClass",
+          "mappings": [],
+          "rdf_type": "owl:ObjectProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "decisionDate in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#decisionDate",
+          "label": "decisionDate",
+          "local_name": "decisionDate",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "decisionId in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#decisionId",
+          "label": "decisionId",
+          "local_name": "decisionId",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "delegatedRole in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#delegatedRole",
+          "label": "delegatedRole",
+          "local_name": "delegatedRole",
+          "mappings": [],
+          "rdf_type": "owl:ObjectProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "delegatedTo in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#delegatedTo",
+          "label": "delegatedTo",
+          "local_name": "delegatedTo",
+          "mappings": [],
+          "rdf_type": "owl:ObjectProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "foundingPhase in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#foundingPhase",
+          "label": "foundingPhase",
+          "local_name": "foundingPhase",
+          "mappings": [],
+          "rdf_type": "owl:ObjectProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "governanceVersion in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#governanceVersion",
+          "label": "governanceVersion",
+          "local_name": "governanceVersion",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "hasConflictDeclaration in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#hasConflictDeclaration",
+          "label": "hasConflictDeclaration",
+          "local_name": "hasConflictDeclaration",
+          "mappings": [],
+          "rdf_type": "owl:ObjectProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "hasVote in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#hasVote",
+          "label": "hasVote",
+          "local_name": "hasVote",
+          "mappings": [],
+          "rdf_type": "owl:ObjectProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "interestedParty in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#interestedParty",
+          "label": "interestedParty",
+          "local_name": "interestedParty",
+          "mappings": [],
+          "rdf_type": "owl:ObjectProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "memberRecordId in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#memberRecordId",
+          "label": "memberRecordId",
+          "local_name": "memberRecordId",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "membershipSubject in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#membershipSubject",
+          "label": "membershipSubject",
+          "local_name": "membershipSubject",
+          "mappings": [],
+          "rdf_type": "owl:ObjectProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "missionGuardian in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#missionGuardian",
+          "label": "missionGuardian",
+          "local_name": "missionGuardian",
+          "mappings": [],
+          "rdf_type": "owl:ObjectProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "missionVetoExercised in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#missionVetoExercised",
+          "label": "missionVetoExercised",
+          "local_name": "missionVetoExercised",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "quorumEligible in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#quorumEligible",
+          "label": "quorumEligible",
+          "local_name": "quorumEligible",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "recused in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#recused",
+          "label": "recused",
+          "local_name": "recused",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "requiresApprovalClass in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#requiresApprovalClass",
+          "label": "requiresApprovalClass",
+          "local_name": "requiresApprovalClass",
+          "mappings": [],
+          "rdf_type": "owl:ObjectProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "voteValue in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#voteValue",
+          "label": "voteValue",
+          "local_name": "voteValue",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "voter in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#voter",
+          "label": "voter",
+          "local_name": "voter",
+          "mappings": [],
+          "rdf_type": "owl:ObjectProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "votesAgainst in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#votesAgainst",
+          "label": "votesAgainst",
+          "local_name": "votesAgainst",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "votesFor in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#votesFor",
+          "label": "votesFor",
+          "local_name": "votesFor",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "votingEligibleFrom in the Exergism Commons governance vocabulary.",
+          "iri": "https://id.exergism.org/governance#votingEligibleFrom",
+          "label": "votingEligibleFrom",
+          "local_name": "votingEligibleFrom",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        }
+      ]
     }
-  }
+  },
+  "schema_version": 2
 }
