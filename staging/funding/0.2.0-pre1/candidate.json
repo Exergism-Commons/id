@@ -4,7 +4,7 @@
   "publication_version": "0.2.0-pre1",
   "registered_publicly": false,
   "schema_version": 1,
-  "source_commit": "46d97c2c754058dead61fec44c7f5addae018e3c",
+  "source_commit": "dfc4bdcd56e74bce986a2c6d01e7362094c0905f",
   "source_pr": "https://github.com/Exergism-Commons/funding/pull/8",
   "source_repository": "Exergism-Commons/funding",
   "source_state": "candidate-pr-head"
