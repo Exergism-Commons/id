@@ -26,6 +26,9 @@ jobs:
           go-version: stable
           check-latest: true
 
+      - name: Generate semantic discovery catalog
+        run: python3 tools/generate_term_catalog.py
+
       - name: Test resolver
         run: |
           set -euo pipefail
@@ -87,7 +90,7 @@ jobs:
 
           Source commit: \`${GITHUB_SHA}\`
 
-          Assets are built with CGO disabled for linux/amd64 and linux/arm64. Verify the selected binary against \`SHA256SUMS\` before deployment. \`SOURCE_COMMIT\` binds the runtime artifact to the repository revision containing the registry and published representations.
+          Assets are built with CGO disabled for linux/amd64 and linux/arm64. Verify the selected binary against \`SHA256SUMS\` before deployment. \`SOURCE_COMMIT\` binds the runtime artifact to the repository revision containing the registry and authoritative publication inputs. The public term catalog is deterministically generated from the provenance-bound ontology representations at build/deploy time.
           EOF
 
           if gh release view "$release_tag" >/dev/null 2>&1; then
