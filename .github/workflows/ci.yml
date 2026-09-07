@@ -25,13 +25,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Exergism-Commons/funding
-          ref: 46d97c2c754058dead61fec44c7f5addae018e3c
+          ref: dfc4bdcd56e74bce986a2c6d01e7362094c0905f
           path: funding-source
           persist-credentials: false
       - name: Install Funding publication tooling
         run: python -m pip install -r funding-source/requirements-ontology.txt
       - name: Verify Funding 0.2 candidate remains unregistered
-        run: python3 tools/validate_funding_candidate.py --source-commit 46d97c2c754058dead61fec44c7f5addae018e3c
+        run: python3 tools/validate_funding_candidate.py --source-commit dfc4bdcd56e74bce986a2c6d01e7362094c0905f
       - name: Rebuild and compare owner-authored Funding publication
         shell: bash
         run: |
