@@ -14,24 +14,20 @@
 <main>
   <p class="eyebrow">Exergism Commons · Funding vocabulary</p>
   <h1><code>funding#</code></h1>
-  <p class="lede">Human-readable documentation for <code>https://id.exergism.org/funding#</code>. Open a term IRI such as <a href="/funding#InstitutionalFundingState"><code>funding#InstitutionalFundingState</code></a> to inspect the RDF facts published for that term.</p>
+  <p class="lede">Human-readable documentation for <code>https://id.exergism.org/funding#</code>. This namespace contains funding-specific terms; shared identity/provenance terms come from <code>commons#</code> and institutional decision, voting and conflict terms come from <code>governance#</code>.</p>
 
-  <div class="panel status"><strong>Adopted namespace.</strong> Funding defines the semantics; <code>id.exergism.org</code> provides stable identity and resolution. The current ontology identifies itself as <code>0.1.0-draft</code>.</div>
+  <div class="panel status"><strong>Adopted namespace.</strong> Funding defines funding-specific semantics; <code>id.exergism.org</code> provides stable identity and resolution. The current ontology identifies itself as <code>0.2.0-pre1</code>.</div>
 
   <p><a href="/ontology/funding">Ontology document</a> · <a href="/representations/funding.owl.ttl">Turtle</a> · <a href="/representations/funding-context.jsonld">JSON-LD context</a> · <a href="/funding/id/">Published record IDs</a> · <a href="https://funding.exergism.org/">Funding website</a> · <a href="https://github.com/Exergism-Commons/funding">Authoritative repository</a></p>
 
   <div class="vocabulary-layout">
     <nav class="vocabulary-index" aria-label="Funding vocabulary terms">
-      <h2>Classes</h2>
+      <h2>Funding-owned classes</h2>
       <ul class="terms">
-        <li id="GovernanceRecord"><a href="/funding#GovernanceRecord"><code>GovernanceRecord</code></a></li>
         <li id="FundingOpportunity"><a href="/funding#FundingOpportunity"><code>FundingOpportunity</code></a></li>
-        <li id="GovernanceDecision"><a href="/funding#GovernanceDecision"><code>GovernanceDecision</code></a></li>
         <li id="FundingAcceptanceDecision"><a href="/funding#FundingAcceptanceDecision"><code>FundingAcceptanceDecision</code></a></li>
         <li id="CompensationDecision"><a href="/funding#CompensationDecision"><code>CompensationDecision</code></a></li>
         <li id="EndowmentPrincipalWithdrawalDecision"><a href="/funding#EndowmentPrincipalWithdrawalDecision"><code>EndowmentPrincipalWithdrawalDecision</code></a></li>
-        <li id="Vote"><a href="/funding#Vote"><code>Vote</code></a></li>
-        <li id="ConflictDisclosure"><a href="/funding#ConflictDisclosure"><code>ConflictDisclosure</code></a></li>
         <li id="DiversificationPlan"><a href="/funding#DiversificationPlan"><code>DiversificationPlan</code></a></li>
         <li id="InstitutionalFundingState"><a href="/funding#InstitutionalFundingState"><code>InstitutionalFundingState</code></a></li>
         <li id="FundingPhaseState"><a href="/funding#FundingPhaseState"><code>FundingPhaseState</code></a></li>
@@ -41,23 +37,11 @@
         <li id="DiversifiedState"><a href="/funding#DiversifiedState"><code>DiversifiedState</code></a></li>
         <li id="ElevatedConcentrationState"><a href="/funding#ElevatedConcentrationState"><code>ElevatedConcentrationState</code></a></li>
         <li id="StrategicDependencyState"><a href="/funding#StrategicDependencyState"><code>StrategicDependencyState</code></a></li>
-        <li id="Actor"><a href="/funding#Actor"><code>Actor</code></a></li>
-        <li id="Person"><a href="/funding#Person"><code>Person</code></a></li>
-        <li id="Organization"><a href="/funding#Organization"><code>Organization</code></a></li>
         <li id="Funder"><a href="/funding#Funder"><code>Funder</code></a></li>
       </ul>
 
-      <h2>Properties</h2>
+      <h2>Funding-owned properties</h2>
       <ul class="terms">
-        <li id="stableId"><a href="/funding#stableId"><code>stableId</code></a></li>
-        <li id="title"><a href="/funding#title"><code>title</code></a></li>
-        <li id="status"><a href="/funding#status"><code>status</code></a></li>
-        <li id="decisionDate"><a href="/funding#decisionDate"><code>decisionDate</code></a></li>
-        <li id="rationale"><a href="/funding#rationale"><code>rationale</code></a></li>
-        <li id="approvalClass"><a href="/funding#approvalClass"><code>approvalClass</code></a></li>
-        <li id="provenance"><a href="/funding#provenance"><code>provenance</code></a></li>
-        <li id="supersedes"><a href="/funding#supersedes"><code>supersedes</code></a></li>
-        <li id="reviewDue"><a href="/funding#reviewDue"><code>reviewDue</code></a></li>
         <li id="funder"><a href="/funding#funder"><code>funder</code></a></li>
         <li id="opportunity"><a href="/funding#opportunity"><code>opportunity</code></a></li>
         <li id="amount"><a href="/funding#amount"><code>amount</code></a></li>
@@ -84,15 +68,9 @@
         <li id="beneficiary"><a href="/funding#beneficiary"><code>beneficiary</code></a></li>
         <li id="workBasis"><a href="/funding#workBasis"><code>workBasis</code></a></li>
         <li id="compensationAmount"><a href="/funding#compensationAmount"><code>compensationAmount</code></a></li>
-        <li id="conflictDisclosure"><a href="/funding#conflictDisclosure"><code>conflictDisclosure</code></a></li>
-        <li id="interestedParty"><a href="/funding#interestedParty"><code>interestedParty</code></a></li>
-        <li id="hasVote"><a href="/funding#hasVote"><code>hasVote</code></a></li>
-        <li id="voter"><a href="/funding#voter"><code>voter</code></a></li>
-        <li id="voteValue"><a href="/funding#voteValue"><code>voteValue</code></a></li>
         <li id="principalWithdrawalAmount"><a href="/funding#principalWithdrawalAmount"><code>principalWithdrawalAmount</code></a></li>
         <li id="exceptionalCondition"><a href="/funding#exceptionalCondition"><code>exceptionalCondition</code></a></li>
         <li id="endowmentPurpose"><a href="/funding#endowmentPurpose"><code>endowmentPurpose</code></a></li>
-        <li id="membershipEconomicShare"><a href="/funding#membershipEconomicShare"><code>membershipEconomicShare</code></a></li>
       </ul>
     </nav>
 
@@ -100,9 +78,9 @@
       <div data-vocabulary-detail hidden></div>
       <div data-vocabulary-overview class="panel vocabulary-overview">
         <p class="eyebrow">Vocabulary browser</p>
-        <h2>Select a term</h2>
+        <h2>Select a Funding-owned term</h2>
         <p>Choose a class or property to inspect its canonical IRI and the structural facts asserted by the published Funding ontology.</p>
-        <p>For example: <a href="/funding#InstitutionalFundingState"><code>InstitutionalFundingState</code></a>.</p>
+        <p>Shared terms are intentionally absent from this index because Funding reuses them rather than minting competing <code>funding#</code> identifiers.</p>
       </div>
       <noscript><div class="panel">Rich term details require JavaScript. The canonical RDF remains available from the <a href="/representations/funding.owl.ttl">Turtle representation</a>.</div></noscript>
     </section>
