@@ -4,8 +4,21 @@
 
 This directory separates two machine-readable concerns from the HTTP route registry in `resolver/registry.json`:
 
-- `namespaces.json` records namespace ownership, canonical ontology IRIs, migration state, imports and authoritative source locations.
-- `terms.json` is a discoverability index. A catalog entry never creates a term and never overrides the ontology in the owning repository.
+- `namespaces.json` records namespace ownership, canonical ontology and version IRIs, migration state, imports and authoritative source locations.
+- `terms.json` is a **generated discoverability projection**. A catalog entry never creates a term and never overrides the ontology in the owning repository.
+- `ontology-snapshots.json` binds published owner-authored semantic artifacts to their source repository commit and Git blob identity.
+
+## Generated term catalog
+
+For adopted Commons/Governance namespaces, `terms.json` is generated deterministically by `tools/generate_term_catalog.py` from the exact Turtle representations already provenance-bound to `Exergism-Commons/governance`. Each indexed term carries its IRI, local name, label, RDF type, owner/source metadata, ontology version, dependencies, lifecycle status and mappings field.
+
+Do not edit generated Commons/Governance term entries by hand. Run:
+
+```sh
+python3 tools/generate_term_catalog.py
+```
+
+CI runs the generator in `--check` mode and fails if the committed projection differs from the owner-authored ontology bytes. Migrating namespaces remain explicitly deferred until their owning source has been adopted and a publication update regenerates the catalog.
 
 ## Ownership rule
 
@@ -15,7 +28,7 @@ Before minting a new EC term, projects should first inspect the Namespace Regist
 
 Namespace states are deliberately explicit:
 
-- `adopted`: the owning project has adopted the canonical namespace;
+- `adopted`: the owning project has adopted the canonical namespace and its publication contract is satisfied;
 - `migrating`: the namespace is reserved and a coordinated migration is in progress;
 - future states may include `deprecated` or `retired`, but identifiers are never reassigned.
 
@@ -23,4 +36,4 @@ Terms from a migrating namespace are not presented as canonical until the owning
 
 ## Resolver boundary
 
-`resolver/registry.json` answers how a concrete HTTP resource is dereferenced. `catalog/namespaces.json` answers which project owns a semantic namespace. `catalog/terms.json` answers which canonical terms are discoverable. Keeping those concerns separate prevents the resolver from accidentally becoming the source of semantic truth.
+`resolver/registry.json` answers how a concrete HTTP resource is dereferenced. `catalog/namespaces.json` answers which project owns a semantic namespace. `catalog/terms.json` answers which canonical terms are discoverable. `catalog/ontology-snapshots.json` records publication provenance. Keeping those concerns separate prevents the resolver from accidentally becoming the source of semantic truth.
