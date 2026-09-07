@@ -18,7 +18,7 @@ func TestPublishedFundingSnapshotMatchesAdoptedNormalization(t *testing.T) {
 	if err := json.Unmarshal(manifestRaw, &manifest); err != nil {
 		t.Fatal(err)
 	}
-	if manifest.SourceCommit != "ea969f97e05f4b551db0990b38ed8c18c08d793c" {
+	if manifest.SourceCommit != "a5f80ded5482aed234f5baab83deca90f466a412" {
 		t.Fatalf("published Funding snapshot is not pinned to adopted normalization head: %s", manifest.SourceCommit)
 	}
 
