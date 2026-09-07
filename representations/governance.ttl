@@ -6,8 +6,9 @@
 
 <https://id.exergism.org/ontology/governance> a owl:Ontology ;
     rdfs:label "Exergism Commons governance ontology"@en ;
-    owl:versionInfo "0.1-PRE1" ;
-    owl:imports <https://id.exergism.org/ontology/commons> ;
+    owl:versionInfo "0.1-PRE2" ;
+    owl:versionIRI <https://id.exergism.org/ontology/governance/0.1-PRE2> ;
+    owl:imports <https://id.exergism.org/ontology/commons/0.1-PRE2> ;
     rdfs:comment "Organization-level institutional governance vocabulary. It models explicit decisions, decision classes, Membership, roles, delegations, conflicts and governance records without manufacturing authority from repository permissions, funding, employment or graph reachability."@en .
 
 # -----------------------------------------------------------------------------
