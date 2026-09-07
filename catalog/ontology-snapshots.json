@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "source_repository": "Exergism-Commons/governance",
+  "source_commit": "06e614c21f9623658c16175a381279f9c36ef526",
+  "snapshots": [
+    {
+      "id": "commons-06e614c21f9623658c16175a381279f9c36ef526",
+      "ontology_iri": "https://id.exergism.org/ontology/commons",
+      "immutable_iri": "https://id.exergism.org/ontology/commons/06e614c21f9623658c16175a381279f9c36ef526",
+      "source_path": "ontology/commons.ttl",
+      "git_blob_sha": "09d2965185a106e6c1428a6e0dba40dd81b640d2"
+    },
+    {
+      "id": "governance-06e614c21f9623658c16175a381279f9c36ef526",
+      "ontology_iri": "https://id.exergism.org/ontology/governance",
+      "immutable_iri": "https://id.exergism.org/ontology/governance/06e614c21f9623658c16175a381279f9c36ef526",
+      "source_path": "ontology/governance.ttl",
+      "git_blob_sha": "35cb8e846aa60688ac90710fb4d00e35e1590850"
+    }
+  ]
+}
