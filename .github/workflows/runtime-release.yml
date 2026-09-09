@@ -10,10 +10,10 @@ on:
 permissions:
   contents: write
 
-# Serialize by publication destination, not by triggering ref. In particular,
-# every runtime-main publisher shares one lock and cannot race another run.
+# Serialize by publication destination. Unauthorized/manual refs get a unique
+# per-run group so they can never cancel a pending runtime-main publisher.
 concurrency:
-  group: runtime-release-${{ github.ref_type == 'tag' && github.ref_name || 'runtime-main' }}
+  group: ${{ github.ref == 'refs/heads/main' && 'runtime-release-runtime-main' || (github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && format('runtime-release-{0}', github.ref_name)) || format('runtime-release-invalid-{0}', github.run_id) }}
   cancel-in-progress: false
 
 jobs:
