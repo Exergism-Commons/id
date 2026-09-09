@@ -54,9 +54,59 @@ jobs:
           )
           printf '%s\n' "$GITHUB_SHA" > dist/SOURCE_COMMIT
 
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            manifest_release_tag="$GITHUB_REF_NAME"
+          else
+            manifest_release_tag="runtime-main"
+          fi
+
+          python3 - "$GITHUB_REPOSITORY" "$manifest_release_tag" "$GITHUB_SHA" <<'PY'
+          import datetime
+          import hashlib
+          import json
+          import pathlib
+          import sys
+
+          repository, release_tag, source_commit = sys.argv[1:]
+          dist = pathlib.Path("dist")
+          assets = {}
+          for arch in ("amd64", "arm64"):
+              name = f"idresolver-linux-{arch}"
+              data = (dist / name).read_bytes()
+              assets[arch] = {
+                  "name": name,
+                  "sha256": hashlib.sha256(data).hexdigest(),
+              }
+          manifest = {
+              "schema_version": "0.1",
+              "repository": repository,
+              "release_tag": release_tag,
+              "source_commit": source_commit,
+              "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z"),
+              "assets": assets,
+          }
+          (dist / "DEPLOYMENT_MANIFEST.json").write_text(
+              json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+          python3 - <<'PY'
+          import json
+          import pathlib
+          import re
+          m = json.loads(pathlib.Path("dist/DEPLOYMENT_MANIFEST.json").read_text())
+          assert m["schema_version"] == "0.1"
+          assert m["repository"] == "Exergism-Commons/id"
+          assert re.fullmatch(r"[0-9a-f]{40}", m["source_commit"])
+          for arch in ("amd64", "arm64"):
+              assert re.fullmatch(r"[0-9a-f]{64}", m["assets"][arch]["sha256"])
+          PY
+
           {
             printf 'source_commit=%s\n' "$GITHUB_SHA"
             printf 'workflow_run=%s\n' "$GITHUB_RUN_ID"
+            printf 'deployment_manifest_sha256=%s\n' "$(sha256sum dist/DEPLOYMENT_MANIFEST.json | awk '{print $1}')"
             go version
             go version -m dist/idresolver-linux-amd64
             go version -m dist/idresolver-linux-arm64
@@ -90,17 +140,20 @@ jobs:
 
           Source commit: \`${GITHUB_SHA}\`
 
-          Assets are built with CGO disabled for linux/amd64 and linux/arm64. Verify the selected binary against \`SHA256SUMS\` before deployment. \`SOURCE_COMMIT\` binds the runtime artifact to the repository revision containing the registry, published representations and the CI-verified generated term catalog. Deployment serves that exact release-matched repository state and does not regenerate semantic artifacts on the host.
+          \`DEPLOYMENT_MANIFEST.json\` is the atomic deployment snapshot binding this source revision to the SHA-256 digest of each architecture-specific runtime. \`SOURCE_COMMIT\` and \`SHA256SUMS\` remain for bootstrap/backward compatibility, but deployment-attestation agents must trust the single manifest snapshot rather than combining those mutable assets independently.
           EOF
 
+          assets=(
+            dist/idresolver-linux-amd64
+            dist/idresolver-linux-arm64
+            dist/DEPLOYMENT_MANIFEST.json
+            dist/SHA256SUMS
+            dist/SOURCE_COMMIT
+            dist/BUILD_INFO
+          )
+
           if gh release view "$release_tag" >/dev/null 2>&1; then
-            gh release upload "$release_tag" \
-              dist/idresolver-linux-amd64 \
-              dist/idresolver-linux-arm64 \
-              dist/SHA256SUMS \
-              dist/SOURCE_COMMIT \
-              dist/BUILD_INFO \
-              --clobber
+            gh release upload "$release_tag" "${assets[@]}" --clobber
             if [[ "$rolling" == "1" ]]; then
               gh release edit "$release_tag" --title "$release_title" --notes-file "$notes_file" --prerelease
             else
@@ -108,26 +161,9 @@ jobs:
             fi
           else
             if [[ "$rolling" == "1" ]]; then
-              gh release create "$release_tag" \
-                dist/idresolver-linux-amd64 \
-                dist/idresolver-linux-arm64 \
-                dist/SHA256SUMS \
-                dist/SOURCE_COMMIT \
-                dist/BUILD_INFO \
-                --verify-tag \
-                --title "$release_title" \
-                --notes-file "$notes_file" \
-                --prerelease
+              gh release create "$release_tag" "${assets[@]}" --verify-tag --title "$release_title" --notes-file "$notes_file" --prerelease
             else
-              gh release create "$release_tag" \
-                dist/idresolver-linux-amd64 \
-                dist/idresolver-linux-arm64 \
-                dist/SHA256SUMS \
-                dist/SOURCE_COMMIT \
-                dist/BUILD_INFO \
-                --verify-tag \
-                --title "$release_title" \
-                --notes-file "$notes_file"
+              gh release create "$release_tag" "${assets[@]}" --verify-tag --title "$release_title" --notes-file "$notes_file"
             fi
           fi
 
