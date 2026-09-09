@@ -12,9 +12,11 @@ permissions:
 
 jobs:
   classify:
-    # Ref authorization and rolling-release freshness are deliberately decided
-    # in case-sensitive Bash before any job can enter a shared publication
-    # concurrency group. GitHub expression comparisons/group names case-fold.
+    # Ref authorization is decided in case-sensitive Bash before any publisher
+    # enters concurrency. Main revisions use per-SHA groups: a stale arrival
+    # can never evict a newer pending main publisher. Version tags use a hash
+    # of the exact case-sensitive tag identity so all publishers for one tag
+    # are serialized without relying on GitHub's case-folded group strings.
     runs-on: ubuntu-latest
     outputs:
       authorized: ${{ steps.classify.outputs.authorized }}
@@ -35,25 +37,23 @@ jobs:
           release_channel="invalid"
 
           if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
-            # A rerun for an older main revision must never enter the rolling
-            # publication lock, because GitHub replaces older pending members
-            # of a concurrency group even when cancel-in-progress is false.
             git fetch --no-tags --force origin \
               refs/heads/main:refs/remotes/origin/main
             remote_main="$(git rev-parse refs/remotes/origin/main)"
             if [[ "$GITHUB_SHA" == "$remote_main" ]]; then
               authorized=true
-              concurrency_group="runtime-release-runtime-main"
+              # Never put different main SHAs in the same GitHub concurrency
+              # queue: GitHub replaces pending members and does not guarantee
+              # ordering. Same-SHA reruns may replace each other harmlessly.
+              concurrency_group="runtime-release-main-${GITHUB_SHA}"
               release_channel="runtime-main"
             else
               echo "Refusing stale runtime-main run: $GITHUB_SHA != current main $remote_main" >&2
             fi
           elif [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" == v* ]]; then
-            # Bash matching is case-sensitive: V1 is not an allowed release tag.
             authorized=true
-            # Versioned tags are independent immutable destinations and do not
-            # need to share the mutable runtime-main lock.
-            concurrency_group="runtime-release-tag-${GITHUB_RUN_ID}"
+            tag_identity="$(printf '%s' "$GITHUB_REF_NAME" | sha256sum | awk '{print $1}')"
+            concurrency_group="runtime-release-tag-${tag_identity}"
             release_channel="$GITHUB_REF_NAME"
           else
             echo "Refusing unauthorized runtime release ref: $GITHUB_REF" >&2
@@ -180,8 +180,9 @@ jobs:
               exit 1
             }
 
-            # Re-check freshness immediately before mutating the rolling tag.
-            # main may have advanced after the classifier/build started.
+            # The authoritative freshness decision is made immediately before
+            # publication. Different main SHAs never share a concurrency queue,
+            # so a stale run cannot displace the run for this remote tip.
             git fetch --no-tags --force origin \
               refs/heads/main:refs/remotes/origin/main
             remote_main="$(git rev-parse refs/remotes/origin/main)"
