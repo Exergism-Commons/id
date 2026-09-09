@@ -9,14 +9,10 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
   classify:
-    # Ref authorization is decided in case-sensitive Bash before any publisher
-    # enters concurrency. Main revisions use per-SHA groups: a stale arrival
-    # can never evict a newer pending main publisher. Version tags use a hash
-    # of the exact case-sensitive tag identity so all publishers for one tag
-    # are serialized without relying on GitHub's case-folded group strings.
     runs-on: ubuntu-latest
     outputs:
       authorized: ${{ steps.classify.outputs.authorized }}
@@ -42,9 +38,9 @@ jobs:
             remote_main="$(git rev-parse refs/remotes/origin/main)"
             if [[ "$GITHUB_SHA" == "$remote_main" ]]; then
               authorized=true
-              # Never put different main SHAs in the same GitHub concurrency
-              # queue: GitHub replaces pending members and does not guarantee
-              # ordering. Same-SHA reruns may replace each other harmlessly.
+              # Different main SHAs deliberately do not share this queue:
+              # GitHub may replace pending members. Destination-level mutation
+              # is serialized later by an atomic repository lock ref.
               concurrency_group="runtime-release-main-${GITHUB_SHA}"
               release_channel="runtime-main"
             else
@@ -174,72 +170,156 @@ jobs:
         run: |
           set -euo pipefail
 
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          lock_ref="refs/tags/runtime-main-publish-lock"
+          lock_commit=""
+          lock_acquired=0
+
+          release_runtime_main_lock() {
+            [[ "$lock_acquired" == 1 && -n "$lock_commit" ]] || return 0
+            remote_oid="$(git ls-remote --refs origin "$lock_ref" | awk '{print $1}')"
+            if [[ "$remote_oid" == "$lock_commit" ]]; then
+              git push \
+                --force-with-lease="${lock_ref}:${lock_commit}" \
+                origin ":${lock_ref}" >/dev/null 2>&1 || true
+            fi
+          }
+
+          acquire_runtime_main_lock() {
+            local tree holder status remote_oid
+            tree="$(git rev-parse "${GITHUB_SHA}^{tree}")"
+            lock_commit="$(printf 'runtime-main-publish-lock run=%s\n' "$GITHUB_RUN_ID" \
+              | git commit-tree "$tree" -p "$GITHUB_SHA")"
+
+            for _ in {1..120}; do
+              if git push origin "${lock_commit}:${lock_ref}" >/dev/null 2>&1; then
+                lock_acquired=1
+                return 0
+              fi
+
+              remote_oid="$(git ls-remote --refs origin "$lock_ref" | awk '{print $1}')"
+              if [[ ! "$remote_oid" =~ ^[0-9a-f]{40}$ ]]; then
+                sleep 2
+                continue
+              fi
+
+              git fetch --no-tags --force origin \
+                "${lock_ref}:refs/remotes/origin/runtime-main-publish-lock" >/dev/null 2>&1 || {
+                  sleep 2
+                  continue
+                }
+              holder="$(git show -s --format=%B refs/remotes/origin/runtime-main-publish-lock \
+                | sed -n 's/^runtime-main-publish-lock run=\([0-9][0-9]*\)$/\1/p' \
+                | head -n1)"
+
+              if [[ "$holder" =~ ^[0-9]+$ ]]; then
+                status="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${holder}" --jq .status 2>/dev/null || true)"
+                if [[ "$status" == "completed" ]]; then
+                  # Reclaim only the exact stale lock object observed above.
+                  git push \
+                    --force-with-lease="${lock_ref}:${remote_oid}" \
+                    origin ":${lock_ref}" >/dev/null 2>&1 || true
+                  sleep 1
+                  continue
+                fi
+              fi
+              sleep 2
+            done
+            return 1
+          }
+
+          check_current_main() {
+            git fetch --no-tags --force origin \
+              refs/heads/main:refs/remotes/origin/main
+            remote_main="$(git rev-parse refs/remotes/origin/main)"
+            [[ "$GITHUB_SHA" == "$remote_main" ]]
+          }
+
+          notes_file="$(mktemp)"
+          trap 'release_runtime_main_lock; rm -f "$notes_file"' EXIT
+          cat > "$notes_file" <<EOF
+          Automated Linux runtime build for Exergism Commons idresolver.
+
+          Source commit: \`${GITHUB_SHA}\`
+
+          \`DEPLOYMENT_MANIFEST.json\` is the authoritative deployment snapshot binding this source revision to each runtime SHA-256. Rolling consumers must capture this manifest first and reject any runtime that does not match it. \`SOURCE_COMMIT\` and \`SHA256SUMS\` are compatibility metadata only.
+          EOF
+
           if [[ "$RELEASE_CHANNEL" == "runtime-main" ]]; then
             [[ "$GITHUB_REF" == "refs/heads/main" ]] || {
               echo "runtime-main may only be published from exact refs/heads/main" >&2
               exit 1
             }
 
-            # The authoritative freshness decision is made immediately before
-            # publication. Different main SHAs never share a concurrency queue,
-            # so a stale run cannot displace the run for this remote tip.
-            git fetch --no-tags --force origin \
-              refs/heads/main:refs/remotes/origin/main
-            remote_main="$(git rev-parse refs/remotes/origin/main)"
-            [[ "$GITHUB_SHA" == "$remote_main" ]] || {
-              echo "Refusing stale runtime-main publication: $GITHUB_SHA != $remote_main" >&2
+            acquire_runtime_main_lock || {
+              echo "Could not acquire runtime-main publication lock" >&2
+              exit 1
+            }
+
+            check_current_main || {
+              echo "Refusing stale runtime-main publication before mutation" >&2
               exit 1
             }
 
             release_tag="runtime-main"
             release_title="idresolver runtime-main (${GITHUB_SHA::12})"
-            rolling=1
 
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            # The lock serializes every mutable runtime-main publisher across
+            # different source SHAs. Upload compatibility/runtime assets first
+            # and the deployment manifest last; consumers therefore either see
+            # a coherent snapshot or fail closed on digest/source mismatch.
             git tag -f "$release_tag" "$GITHUB_SHA"
             git push --force origin "refs/tags/${release_tag}"
+
+            if ! gh release view "$release_tag" >/dev/null 2>&1; then
+              gh release create "$release_tag" \
+                --verify-tag \
+                --title "$release_title" \
+                --notes-file "$notes_file" \
+                --prerelease
+            fi
+
+            gh release upload "$release_tag" \
+              dist/idresolver-linux-amd64 \
+              dist/idresolver-linux-arm64 \
+              dist/SHA256SUMS \
+              dist/SOURCE_COMMIT \
+              dist/BUILD_INFO \
+              --clobber
+
+            check_current_main || {
+              echo "main advanced during runtime-main publication; refusing manifest commit" >&2
+              exit 1
+            }
+
+            gh release upload "$release_tag" dist/DEPLOYMENT_MANIFEST.json --clobber
+            gh release edit "$release_tag" \
+              --title "$release_title" \
+              --notes-file "$notes_file" \
+              --prerelease
           else
             release_tag="$RELEASE_CHANNEL"
             [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" == "$release_tag" && "$release_tag" == v* ]] || {
               echo "Only exact case-sensitive v* tags may publish versioned runtime releases" >&2
               exit 1
             }
+
             release_title="idresolver ${release_tag}"
-            rolling=0
-          fi
-
-          notes_file="$(mktemp)"
-          cat > "$notes_file" <<EOF
-          Automated Linux runtime build for Exergism Commons idresolver.
-
-          Source commit: \`${GITHUB_SHA}\`
-
-          \`DEPLOYMENT_MANIFEST.json\` is the atomic deployment snapshot binding this source revision to the SHA-256 digest of each architecture-specific runtime. \`SOURCE_COMMIT\` and \`SHA256SUMS\` remain for bootstrap/backward compatibility, but deployment-attestation agents must trust the single manifest snapshot rather than combining those mutable assets independently.
-          EOF
-
-          assets=(
-            dist/idresolver-linux-amd64
-            dist/idresolver-linux-arm64
-            dist/DEPLOYMENT_MANIFEST.json
-            dist/SHA256SUMS
-            dist/SOURCE_COMMIT
-            dist/BUILD_INFO
-          )
-
-          if gh release view "$release_tag" >/dev/null 2>&1; then
-            gh release upload "$release_tag" "${assets[@]}" --clobber
-            if [[ "$rolling" == "1" ]]; then
-              gh release edit "$release_tag" --title "$release_title" --notes-file "$notes_file" --prerelease
-            else
-              gh release edit "$release_tag" --title "$release_title" --notes-file "$notes_file"
+            if gh release view "$release_tag" >/dev/null 2>&1; then
+              echo "Versioned runtime release ${release_tag} already exists; refusing mutation" >&2
+              exit 1
             fi
-          else
-            if [[ "$rolling" == "1" ]]; then
-              gh release create "$release_tag" "${assets[@]}" --verify-tag --title "$release_title" --notes-file "$notes_file" --prerelease
-            else
-              gh release create "$release_tag" "${assets[@]}" --verify-tag --title "$release_title" --notes-file "$notes_file"
-            fi
-          fi
 
-          rm -f "$notes_file"
+            gh release create "$release_tag" \
+              dist/idresolver-linux-amd64 \
+              dist/idresolver-linux-arm64 \
+              dist/SHA256SUMS \
+              dist/SOURCE_COMMIT \
+              dist/BUILD_INFO \
+              dist/DEPLOYMENT_MANIFEST.json \
+              --verify-tag \
+              --title "$release_title" \
+              --notes-file "$notes_file"
+          fi
