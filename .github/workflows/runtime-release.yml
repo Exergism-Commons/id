@@ -10,12 +10,17 @@ on:
 permissions:
   contents: write
 
+# Serialize by publication destination, not by triggering ref. In particular,
+# every runtime-main publisher shares one lock and cannot race another run.
 concurrency:
-  group: runtime-release-${{ github.ref }}
-  cancel-in-progress: true
+  group: runtime-release-${{ github.ref_type == 'tag' && github.ref_name || 'runtime-main' }}
+  cancel-in-progress: false
 
 jobs:
   build-and-publish:
+    # A manually dispatched feature branch must never be able to move or
+    # republish runtime-main. Tagged releases are limited to the v* family.
+    if: github.ref == 'refs/heads/main' || (github.ref_type == 'tag' && startsWith(github.ref_name, 'v'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -57,6 +62,10 @@ jobs:
           if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
             manifest_release_tag="$GITHUB_REF_NAME"
           else
+            [[ "$GITHUB_REF" == "refs/heads/main" ]] || {
+              echo "runtime-main may only be built from refs/heads/main" >&2
+              exit 1
+            }
             manifest_release_tag="runtime-main"
           fi
 
@@ -121,9 +130,17 @@ jobs:
 
           if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
             release_tag="$GITHUB_REF_NAME"
+            [[ "$release_tag" == v* ]] || {
+              echo "Only v* tags may publish tagged runtime releases" >&2
+              exit 1
+            }
             release_title="idresolver ${release_tag}"
             rolling=0
           else
+            [[ "$GITHUB_REF" == "refs/heads/main" ]] || {
+              echo "runtime-main may only be published from refs/heads/main" >&2
+              exit 1
+            }
             release_tag="runtime-main"
             release_title="idresolver runtime-main (${GITHUB_SHA::12})"
             rolling=1
