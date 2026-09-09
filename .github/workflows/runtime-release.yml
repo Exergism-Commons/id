@@ -214,6 +214,18 @@ jobs:
                 | sed -n 's/^runtime-main-publish-lock run=\([0-9][0-9]*\)$/\1/p' \
                 | head -n1)"
 
+              if [[ "$holder" == "$GITHUB_RUN_ID" ]]; then
+                # GitHub preserves GITHUB_RUN_ID across "Re-run jobs" attempts.
+                # Reclaim only the exact lock object observed from an earlier
+                # attempt of this run; force-with-lease prevents deleting a lock
+                # that another publisher acquired in the meantime.
+                git push \
+                  --force-with-lease="${lock_ref}:${remote_oid}" \
+                  origin ":${lock_ref}" >/dev/null 2>&1 || true
+                sleep 1
+                continue
+              fi
+
               if [[ "$holder" =~ ^[0-9]+$ ]]; then
                 status="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${holder}" --jq .status 2>/dev/null || true)"
                 if [[ "$status" == "completed" ]]; then
