@@ -49,7 +49,11 @@ jobs:
           elif [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" == v* ]]; then
             authorized=true
             tag_identity="$(printf '%s' "$GITHUB_REF_NAME" | sha256sum | awk '{print $1}')"
-            concurrency_group="runtime-release-tag-${tag_identity}"
+            target_identity="$(git rev-parse "${GITHUB_SHA}^{commit}")"
+            # Different targets of a force-moved version tag must never share
+            # GitHub's single-pending concurrency slot. Destination mutation is
+            # serialized later by a lock derived only from the exact tag name.
+            concurrency_group="runtime-release-tag-${tag_identity}-${target_identity}"
             release_channel="$GITHUB_REF_NAME"
           else
             echo "Refusing unauthorized runtime release ref: $GITHUB_REF" >&2
@@ -173,24 +177,27 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          lock_ref="refs/tags/runtime-main-publish-lock"
+          lock_ref=""
           lock_commit=""
           lock_acquired=0
+          lock_local_ref="refs/ec-release-lock/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
 
-          release_runtime_main_lock() {
-            [[ "$lock_acquired" == 1 && -n "$lock_commit" ]] || return 0
+          release_publication_lock() {
+            [[ "$lock_acquired" == 1 && -n "$lock_commit" && -n "$lock_ref" ]] || return 0
             remote_oid="$(git ls-remote --refs origin "$lock_ref" | awk '{print $1}')"
             if [[ "$remote_oid" == "$lock_commit" ]]; then
               git push \
                 --force-with-lease="${lock_ref}:${lock_commit}" \
                 origin ":${lock_ref}" >/dev/null 2>&1 || true
             fi
+            git update-ref -d "$lock_local_ref" >/dev/null 2>&1 || true
           }
 
-          acquire_runtime_main_lock() {
-            local tree holder status remote_oid run_meta http_code reclaim
+          acquire_publication_lock() {
+            local label="$1" tree holder status remote_oid run_meta http_code reclaim
+            [[ -n "$lock_ref" ]] || return 1
             tree="$(git rev-parse "${GITHUB_SHA}^{tree}")"
-            lock_commit="$(printf 'runtime-main-publish-lock run=%s\n' "$GITHUB_RUN_ID" \
+            lock_commit="$(printf 'runtime-release-publish-lock run=%s label=%s\n' "$GITHUB_RUN_ID" "$label" \
               | git commit-tree "$tree" -p "$GITHUB_SHA")"
 
             for _ in {1..120}; do
@@ -205,13 +212,14 @@ jobs:
                 continue
               fi
 
+              git update-ref -d "$lock_local_ref" >/dev/null 2>&1 || true
               git fetch --no-tags --force origin \
-                "${lock_ref}:refs/remotes/origin/runtime-main-publish-lock" >/dev/null 2>&1 || {
+                "${lock_ref}:${lock_local_ref}" >/dev/null 2>&1 || {
                   sleep 2
                   continue
                 }
-              holder="$(git show -s --format=%B refs/remotes/origin/runtime-main-publish-lock \
-                | sed -n 's/^runtime-main-publish-lock run=\([0-9][0-9]*\)$/\1/p' \
+              holder="$(git show -s --format=%B "$lock_local_ref" \
+                | sed -n 's/^runtime-release-publish-lock run=\([0-9][0-9]*\) .*/\1/p' \
                 | head -n1)"
 
               if [[ "$holder" == "$GITHUB_RUN_ID" ]]; then
@@ -283,8 +291,16 @@ jobs:
             [[ "$remote_commit" == "$expected_commit" ]]
           }
 
+          cleanup_version_release() {
+            local tag="$1"
+            gh release delete "$tag" --yes >/dev/null 2>&1 || {
+              echo "Failed to remove inconsistent release ${tag}" >&2
+              return 1
+            }
+          }
+
           notes_file="$(mktemp)"
-          trap 'release_runtime_main_lock; rm -f "$notes_file"' EXIT
+          trap 'release_publication_lock; rm -f "$notes_file"' EXIT
           cat > "$notes_file" <<EOF
           Automated Linux runtime build for Exergism Commons idresolver.
 
@@ -299,7 +315,8 @@ jobs:
               exit 1
             }
 
-            acquire_runtime_main_lock || {
+            lock_ref="refs/tags/runtime-main-publish-lock"
+            acquire_publication_lock "runtime-main" || {
               echo "Could not acquire runtime-main publication lock" >&2
               exit 1
             }
@@ -352,6 +369,13 @@ jobs:
               exit 1
             }
 
+            tag_identity="$(printf '%s' "$release_tag" | sha256sum | awk '{print $1}')"
+            lock_ref="refs/tags/runtime-version-publish-lock-${tag_identity}"
+            acquire_publication_lock "version:${tag_identity}" || {
+              echo "Could not acquire publication lock for ${release_tag}" >&2
+              exit 1
+            }
+
             verify_remote_version_tag "$release_tag" || {
               echo "Remote version tag no longer targets this build revision; refusing release mutation" >&2
               exit 1
@@ -371,7 +395,7 @@ jobs:
                   exit 1
                 }
                 echo "Removing incomplete draft release ${release_tag} before retry" >&2
-                gh release delete "$release_tag" --yes
+                cleanup_version_release "$release_tag" || exit 1
               else
                 echo "Versioned runtime release ${release_tag} already published; refusing mutation" >&2
                 exit 1
@@ -379,17 +403,40 @@ jobs:
             fi
 
             verify_remote_version_tag "$release_tag" || {
-              echo "Remote version tag moved before release creation; refusing publication" >&2
+              echo "Remote version tag moved before draft creation; refusing publication" >&2
               exit 1
             }
             gh release create "$release_tag" \
+              --verify-tag \
+              --draft \
+              --title "$release_title" \
+              --notes-file "$notes_file"
+
+            if ! verify_remote_version_tag "$release_tag"; then
+              echo "Remote version tag moved after draft creation; removing stale draft" >&2
+              cleanup_version_release "$release_tag" || true
+              exit 1
+            fi
+
+            gh release upload "$release_tag" \
               dist/idresolver-linux-amd64 \
               dist/idresolver-linux-arm64 \
               dist/SHA256SUMS \
               dist/SOURCE_COMMIT \
               dist/BUILD_INFO \
-              dist/DEPLOYMENT_MANIFEST.json \
-              --verify-tag \
-              --title "$release_title" \
-              --notes-file "$notes_file"
+              dist/DEPLOYMENT_MANIFEST.json
+
+            if ! verify_remote_version_tag "$release_tag"; then
+              echo "Remote version tag moved during asset upload; removing stale draft" >&2
+              cleanup_version_release "$release_tag" || true
+              exit 1
+            fi
+
+            gh release edit "$release_tag" --draft=false
+
+            if ! verify_remote_version_tag "$release_tag"; then
+              echo "Remote version tag moved during final publication; removing inconsistent release" >&2
+              cleanup_version_release "$release_tag" || true
+              exit 1
+            fi
           fi
