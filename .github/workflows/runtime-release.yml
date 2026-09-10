@@ -267,6 +267,22 @@ jobs:
             [[ "$GITHUB_SHA" == "$remote_main" ]]
           }
 
+          verify_remote_version_tag() {
+            local tag="$1" verify_ref expected_commit remote_commit
+            expected_commit="$(git rev-parse "${GITHUB_SHA}^{commit}")" || return 1
+            verify_ref="refs/ec-release-verify/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+            git update-ref -d "$verify_ref" >/dev/null 2>&1 || true
+            if ! git fetch --no-tags --force origin "refs/tags/${tag}:${verify_ref}" >/dev/null 2>&1; then
+              return 1
+            fi
+            remote_commit="$(git rev-parse "${verify_ref}^{commit}" 2>/dev/null)" || {
+              git update-ref -d "$verify_ref" >/dev/null 2>&1 || true
+              return 1
+            }
+            git update-ref -d "$verify_ref" >/dev/null 2>&1 || true
+            [[ "$remote_commit" == "$expected_commit" ]]
+          }
+
           notes_file="$(mktemp)"
           trap 'release_runtime_main_lock; rm -f "$notes_file"' EXIT
           cat > "$notes_file" <<EOF
@@ -336,6 +352,11 @@ jobs:
               exit 1
             }
 
+            verify_remote_version_tag "$release_tag" || {
+              echo "Remote version tag no longer targets this build revision; refusing release mutation" >&2
+              exit 1
+            }
+
             release_title="idresolver ${release_tag}"
             if gh release view "$release_tag" >/dev/null 2>&1; then
               existing_tag="$(gh release view "$release_tag" --json tagName --jq .tagName)"
@@ -345,6 +366,10 @@ jobs:
                 exit 1
               }
               if [[ "$is_draft" == "true" ]]; then
+                verify_remote_version_tag "$release_tag" || {
+                  echo "Remote version tag moved before draft repair; refusing to delete the draft" >&2
+                  exit 1
+                }
                 echo "Removing incomplete draft release ${release_tag} before retry" >&2
                 gh release delete "$release_tag" --yes
               else
@@ -353,6 +378,10 @@ jobs:
               fi
             fi
 
+            verify_remote_version_tag "$release_tag" || {
+              echo "Remote version tag moved before release creation; refusing publication" >&2
+              exit 1
+            }
             gh release create "$release_tag" \
               dist/idresolver-linux-amd64 \
               dist/idresolver-linux-arm64 \
