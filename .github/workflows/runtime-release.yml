@@ -188,7 +188,7 @@ jobs:
           }
 
           acquire_runtime_main_lock() {
-            local tree holder status remote_oid
+            local tree holder status remote_oid run_meta http_code reclaim
             tree="$(git rev-parse "${GITHUB_SHA}^{tree}")"
             lock_commit="$(printf 'runtime-main-publish-lock run=%s\n' "$GITHUB_RUN_ID" \
               | git commit-tree "$tree" -p "$GITHUB_SHA")"
@@ -215,10 +215,8 @@ jobs:
                 | head -n1)"
 
               if [[ "$holder" == "$GITHUB_RUN_ID" ]]; then
-                # GitHub preserves GITHUB_RUN_ID across "Re-run jobs" attempts.
-                # Reclaim only the exact lock object observed from an earlier
-                # attempt of this run; force-with-lease prevents deleting a lock
-                # that another publisher acquired in the meantime.
+                # GITHUB_RUN_ID survives "Re-run jobs". Reclaim only the exact
+                # lock object observed from an earlier attempt of this run.
                 git push \
                   --force-with-lease="${lock_ref}:${remote_oid}" \
                   origin ":${lock_ref}" >/dev/null 2>&1 || true
@@ -227,9 +225,29 @@ jobs:
               fi
 
               if [[ "$holder" =~ ^[0-9]+$ ]]; then
-                status="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${holder}" --jq .status 2>/dev/null || true)"
-                if [[ "$status" == "completed" ]]; then
-                  # Reclaim only the exact stale lock object observed above.
+                run_meta="$(mktemp)"
+                http_code="$(curl -sS -o "$run_meta" -w '%{http_code}' \
+                  -H 'Accept: application/vnd.github+json' \
+                  -H "Authorization: Bearer ${GH_TOKEN}" \
+                  -H 'X-GitHub-Api-Version: 2022-11-28' \
+                  "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${holder}" || true)"
+                reclaim=0
+                if [[ "$http_code" == "200" ]]; then
+                  status="$(python3 - "$run_meta" <<'PY'
+          import json, pathlib, sys
+          print(json.loads(pathlib.Path(sys.argv[1]).read_text()).get("status", ""))
+          PY
+          )"
+                  [[ "$status" == "completed" ]] && reclaim=1
+                elif [[ "$http_code" == "404" ]]; then
+                  # The authenticated same-repository run lookup definitively
+                  # no longer resolves. Reclaim only the exact OID we observed;
+                  # transient/network/authorization failures never reclaim.
+                  reclaim=1
+                fi
+                rm -f "$run_meta"
+
+                if [[ "$reclaim" == 1 ]]; then
                   git push \
                     --force-with-lease="${lock_ref}:${remote_oid}" \
                     origin ":${lock_ref}" >/dev/null 2>&1 || true
@@ -244,8 +262,8 @@ jobs:
 
           check_current_main() {
             git fetch --no-tags --force origin \
-              refs/heads/main:refs/remotes/origin/main
-            remote_main="$(git rev-parse refs/remotes/origin/main)"
+              refs/heads/main:refs/remotes/origin/main || return 1
+            remote_main="$(git rev-parse refs/remotes/origin/main)" || return 1
             [[ "$GITHUB_SHA" == "$remote_main" ]]
           }
 
@@ -279,9 +297,10 @@ jobs:
             release_title="idresolver runtime-main (${GITHUB_SHA::12})"
 
             # The lock serializes every mutable runtime-main publisher across
-            # different source SHAs. Upload compatibility/runtime assets first
-            # and the deployment manifest last; consumers therefore either see
-            # a coherent snapshot or fail closed on digest/source mismatch.
+            # source SHAs. The manifest is the commit point: after destructive
+            # mutation starts, this publisher always completes its coherent
+            # generation even if main advances. A newer publisher may replace
+            # the whole generation after acquiring this same lock.
             git tag -f "$release_tag" "$GITHUB_SHA"
             git push --force origin "refs/tags/${release_tag}"
 
@@ -301,10 +320,9 @@ jobs:
               dist/BUILD_INFO \
               --clobber
 
-            check_current_main || {
-              echo "main advanced during runtime-main publication; refusing manifest commit" >&2
-              exit 1
-            }
+            if ! check_current_main; then
+              echo "main advanced during locked publication; completing this coherent generation before the newer publisher replaces it" >&2
+            fi
 
             gh release upload "$release_tag" dist/DEPLOYMENT_MANIFEST.json --clobber
             gh release edit "$release_tag" \
@@ -320,8 +338,19 @@ jobs:
 
             release_title="idresolver ${release_tag}"
             if gh release view "$release_tag" >/dev/null 2>&1; then
-              echo "Versioned runtime release ${release_tag} already exists; refusing mutation" >&2
-              exit 1
+              existing_tag="$(gh release view "$release_tag" --json tagName --jq .tagName)"
+              is_draft="$(gh release view "$release_tag" --json isDraft --jq .isDraft)"
+              [[ "$existing_tag" == "$release_tag" ]] || {
+                echo "Existing release tag identity mismatch; refusing mutation" >&2
+                exit 1
+              }
+              if [[ "$is_draft" == "true" ]]; then
+                echo "Removing incomplete draft release ${release_tag} before retry" >&2
+                gh release delete "$release_tag" --yes
+              else
+                echo "Versioned runtime release ${release_tag} already published; refusing mutation" >&2
+                exit 1
+              fi
             fi
 
             gh release create "$release_tag" \
