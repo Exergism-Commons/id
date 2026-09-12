@@ -48,6 +48,15 @@ jobs:
       - run: go vet ./...
       - name: Validate deployment bootstrap
         run: bash -n deploy/setup-digitalocean.sh
+      - name: Validate release recovery invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'EC-Publisher: Exergism-Commons/id/.github/workflows/runtime-release.yml' .github/workflows/runtime-release.yml
+          grep -Fq 'EC-Source-Commit: ${GITHUB_SHA}' .github/workflows/runtime-release.yml
+          grep -Fq 'release_owner_source()' .github/workflows/runtime-release.yml
+          grep -Fq 'validate_published_release_manifest()' .github/workflows/runtime-release.yml
+          grep -Fq 'Removing stale/incomplete owned published release' .github/workflows/runtime-release.yml
       - name: Enforce reviewed redistribution surface
         shell: bash
         run: |
