@@ -33,18 +33,18 @@ jobs:
           release_channel="invalid"
 
           if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
+            # Admit every exact-main run, including reruns whose SHA is no
+            # longer the current tip. Different SHAs remain isolated in their
+            # own GitHub concurrency groups. Freshness or marked-interruption
+            # recovery is decided only later while holding the destination lock.
             git fetch --no-tags --force origin \
               refs/heads/main:refs/remotes/origin/main
             remote_main="$(git rev-parse refs/remotes/origin/main)"
-            if [[ "$GITHUB_SHA" == "$remote_main" ]]; then
-              authorized=true
-              # Different main SHAs deliberately do not share this queue:
-              # GitHub may replace pending members. Destination-level mutation
-              # is serialized later by an atomic repository lock ref.
-              concurrency_group="runtime-release-main-${GITHUB_SHA}"
-              release_channel="runtime-main"
-            else
-              echo "Refusing stale runtime-main run: $GITHUB_SHA != current main $remote_main" >&2
+            authorized=true
+            concurrency_group="runtime-release-main-${GITHUB_SHA}"
+            release_channel="runtime-main"
+            if [[ "$GITHUB_SHA" != "$remote_main" ]]; then
+              echo "Admitting stale exact-main rerun for locked recovery decision: $GITHUB_SHA != current main $remote_main" >&2
             fi
           elif [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" == v* ]]; then
             authorized=true
