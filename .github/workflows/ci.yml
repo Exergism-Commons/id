@@ -66,6 +66,7 @@ jobs:
           grep -Fq 'runtime_main_tag_matches_source()' .github/workflows/runtime-release.yml
           grep -Fq 'write_runtime_main_mutation_marker' .github/workflows/runtime-release.yml
           grep -Fq 'clear_runtime_main_mutation_marker' .github/workflows/runtime-release.yml
+          grep -Fq 'Admitting stale exact-main rerun for locked recovery decision' .github/workflows/runtime-release.yml
       - name: Enforce reviewed redistribution surface
         shell: bash
         run: |
