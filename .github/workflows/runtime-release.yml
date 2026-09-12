@@ -34,14 +34,17 @@ jobs:
 
           if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
             # Admit every exact-main run, including reruns whose SHA is no
-            # longer the current tip. Different SHAs remain isolated in their
-            # own GitHub concurrency groups. Freshness or marked-interruption
-            # recovery is decided only later while holding the destination lock.
+            # longer the current tip. Include GITHUB_RUN_ID so unrelated runs
+            # for the same SHA cannot evict an owning recovery from GitHub's
+            # single-pending concurrency slot. Re-run jobs keeps the same run
+            # ID, so attempts belonging to one recovery still serialize together.
+            # Freshness or marked-interruption recovery is decided only later
+            # while holding the destination lock.
             git fetch --no-tags --force origin \
               refs/heads/main:refs/remotes/origin/main
             remote_main="$(git rev-parse refs/remotes/origin/main)"
             authorized=true
-            concurrency_group="runtime-release-main-${GITHUB_SHA}"
+            concurrency_group="runtime-release-main-${GITHUB_SHA}-${GITHUB_RUN_ID}"
             release_channel="runtime-main"
             if [[ "$GITHUB_SHA" != "$remote_main" ]]; then
               echo "Admitting stale exact-main rerun for locked recovery decision: $GITHUB_SHA != current main $remote_main" >&2
