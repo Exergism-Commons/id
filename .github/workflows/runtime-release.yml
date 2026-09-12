@@ -309,15 +309,15 @@ jobs:
               return 1
             }
             python3 - "$tmp/DEPLOYMENT_MANIFEST.json" "$GITHUB_REPOSITORY" "$tag" "$expected" <<'PY' || rc=$?
-import json, pathlib, re, sys
-path, repository, tag, expected = sys.argv[1:]
-obj = json.loads(pathlib.Path(path).read_text())
-assert obj.get("schema_version") == "0.1"
-assert obj.get("repository") == repository
-assert obj.get("release_tag") == tag
-assert obj.get("source_commit") == expected
-assert re.fullmatch(r"[0-9a-f]{40}", expected)
-PY
+          import json, pathlib, re, sys
+          path, repository, tag, expected = sys.argv[1:]
+          obj = json.loads(pathlib.Path(path).read_text())
+          assert obj.get("schema_version") == "0.1"
+          assert obj.get("repository") == repository
+          assert obj.get("release_tag") == tag
+          assert obj.get("source_commit") == expected
+          assert re.fullmatch(r"[0-9a-f]{40}", expected)
+          PY
             rm -rf "$tmp"
             return "$rc"
           }
