@@ -291,6 +291,37 @@ jobs:
             [[ "$remote_commit" == "$expected_commit" ]]
           }
 
+          release_owner_source() {
+            local tag="$1" body publisher source
+            body="$(gh release view "$tag" --json body --jq .body 2>/dev/null)" || return 1
+            publisher="$(printf '%s\n' "$body" | sed -n 's/^EC-Publisher: //p' | head -n1)"
+            source="$(printf '%s\n' "$body" | sed -n 's/^EC-Source-Commit: \([0-9a-f][0-9a-f]*\)$/\1/p' | head -n1)"
+            [[ "$publisher" == "Exergism-Commons/id/.github/workflows/runtime-release.yml" ]] || return 1
+            [[ "$source" =~ ^[0-9a-f]{40}$ ]] || return 1
+            printf '%s\n' "$source"
+          }
+
+          validate_published_release_manifest() {
+            local tag="$1" expected="$2" tmp rc=0
+            tmp="$(mktemp -d)"
+            gh release download "$tag" --pattern DEPLOYMENT_MANIFEST.json --dir "$tmp" >/dev/null 2>&1 || {
+              rm -rf "$tmp"
+              return 1
+            }
+            python3 - "$tmp/DEPLOYMENT_MANIFEST.json" "$GITHUB_REPOSITORY" "$tag" "$expected" <<'PY' || rc=$?
+import json, pathlib, re, sys
+path, repository, tag, expected = sys.argv[1:]
+obj = json.loads(pathlib.Path(path).read_text())
+assert obj.get("schema_version") == "0.1"
+assert obj.get("repository") == repository
+assert obj.get("release_tag") == tag
+assert obj.get("source_commit") == expected
+assert re.fullmatch(r"[0-9a-f]{40}", expected)
+PY
+            rm -rf "$tmp"
+            return "$rc"
+          }
+
           cleanup_version_release() {
             local tag="$1"
             gh release delete "$tag" --yes >/dev/null 2>&1 || {
@@ -305,6 +336,8 @@ jobs:
           Automated Linux runtime build for Exergism Commons idresolver.
 
           Source commit: \`${GITHUB_SHA}\`
+          EC-Publisher: Exergism-Commons/id/.github/workflows/runtime-release.yml
+          EC-Source-Commit: ${GITHUB_SHA}
 
           \`DEPLOYMENT_MANIFEST.json\` is the authoritative deployment snapshot binding this source revision to each runtime SHA-256. Rolling consumers must capture this manifest first and reject any runtime that does not match it. \`SOURCE_COMMIT\` and \`SHA256SUMS\` are compatibility metadata only.
           EOF
@@ -385,21 +418,32 @@ jobs:
             if gh release view "$release_tag" >/dev/null 2>&1; then
               existing_tag="$(gh release view "$release_tag" --json tagName --jq .tagName)"
               is_draft="$(gh release view "$release_tag" --json isDraft --jq .isDraft)"
+              owner_source="$(release_owner_source "$release_tag" || true)"
               [[ "$existing_tag" == "$release_tag" ]] || {
                 echo "Existing release tag identity mismatch; refusing mutation" >&2
                 exit 1
               }
-              if [[ "$is_draft" == "true" ]]; then
-                verify_remote_version_tag "$release_tag" || {
-                  echo "Remote version tag moved before draft repair; refusing to delete the draft" >&2
-                  exit 1
-                }
-                echo "Removing incomplete draft release ${release_tag} before retry" >&2
-                cleanup_version_release "$release_tag" || exit 1
-              else
-                echo "Versioned runtime release ${release_tag} already published; refusing mutation" >&2
+              [[ "$owner_source" =~ ^[0-9a-f]{40}$ ]] || {
+                echo "Existing release is not owned by the EC runtime publisher; refusing mutation" >&2
                 exit 1
+              }
+              verify_remote_version_tag "$release_tag" || {
+                echo "Remote version tag moved before release recovery; refusing mutation" >&2
+                exit 1
+              }
+
+              if [[ "$is_draft" == "false" && "$owner_source" == "$GITHUB_SHA" ]] \
+                 && validate_published_release_manifest "$release_tag" "$GITHUB_SHA"; then
+                echo "Versioned runtime release ${release_tag} is already published coherently for this source"
+                exit 0
               fi
+
+              if [[ "$is_draft" == "true" ]]; then
+                echo "Removing incomplete owned draft release ${release_tag} before retry" >&2
+              else
+                echo "Removing stale/incomplete owned published release ${release_tag} before repair" >&2
+              fi
+              cleanup_version_release "$release_tag" || exit 1
             fi
 
             verify_remote_version_tag "$release_tag" || {
