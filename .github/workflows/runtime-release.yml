@@ -275,6 +275,51 @@ jobs:
             [[ "$GITHUB_SHA" == "$remote_main" ]]
           }
 
+          runtime_main_tag_matches_source() {
+            local verify_ref remote_commit
+            verify_ref="refs/ec-runtime-main-verify/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+            git update-ref -d "$verify_ref" >/dev/null 2>&1 || true
+            git fetch --no-tags --force origin "refs/tags/runtime-main:${verify_ref}" >/dev/null 2>&1 || return 1
+            remote_commit="$(git rev-parse "${verify_ref}^{commit}" 2>/dev/null)" || {
+              git update-ref -d "$verify_ref" >/dev/null 2>&1 || true
+              return 1
+            }
+            git update-ref -d "$verify_ref" >/dev/null 2>&1 || true
+            [[ "$remote_commit" == "$(git rev-parse "${GITHUB_SHA}^{commit}")" ]]
+          }
+
+          runtime_main_mutation_marker_ref() {
+            printf 'refs/tags/runtime-main-mutation-%s\n' "$GITHUB_RUN_ID"
+          }
+
+          write_runtime_main_mutation_marker() {
+            local marker_ref marker_commit tree
+            marker_ref="$(runtime_main_mutation_marker_ref)"
+            tree="$(git rev-parse "${GITHUB_SHA}^{tree}")" || return 1
+            marker_commit="$(printf 'runtime-main-mutation run=%s source=%s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" | git commit-tree "$tree" -p "$GITHUB_SHA")" || return 1
+            git push --force-with-lease="$marker_ref" origin "${marker_commit}:${marker_ref}" >/dev/null 2>&1
+          }
+
+          runtime_main_mutation_marker_matches() {
+            local marker_ref local_ref body source run
+            marker_ref="$(runtime_main_mutation_marker_ref)"
+            local_ref="refs/ec-runtime-main-marker/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+            git update-ref -d "$local_ref" >/dev/null 2>&1 || true
+            git fetch --no-tags --force origin "${marker_ref}:${local_ref}" >/dev/null 2>&1 || return 1
+            body="$(git show -s --format=%B "$local_ref")" || return 1
+            git update-ref -d "$local_ref" >/dev/null 2>&1 || true
+            run="$(printf '%s\n' "$body" | sed -n 's/^runtime-main-mutation run=\([0-9][0-9]*\) source=.*/\1/p' | head -n1)"
+            source="$(printf '%s\n' "$body" | sed -n 's/^runtime-main-mutation run=[0-9][0-9]* source=\([0-9a-f][0-9a-f]*\)$/\1/p' | head -n1)"
+            [[ "$run" == "$GITHUB_RUN_ID" && "$source" == "$GITHUB_SHA" ]]
+          }
+
+          clear_runtime_main_mutation_marker() {
+            local marker_ref remote_oid
+            marker_ref="$(runtime_main_mutation_marker_ref)"
+            remote_oid="$(git ls-remote --refs origin "$marker_ref" | awk '{print $1}')"
+            [[ "$remote_oid" =~ ^[0-9a-f]{40}$ ]] || return 0
+            git push --force-with-lease="${marker_ref}:${remote_oid}" origin ":${marker_ref}" >/dev/null 2>&1
+          }
           verify_remote_version_tag() {
             local tag="$1" verify_ref expected_commit remote_commit
             expected_commit="$(git rev-parse "${GITHUB_SHA}^{commit}")" || return 1
@@ -354,13 +399,29 @@ jobs:
               exit 1
             }
 
-            check_current_main || {
-              echo "Refusing stale runtime-main publication before mutation" >&2
-              exit 1
-            }
+            repair_interrupted=0
+            if ! check_current_main; then
+              if runtime_main_mutation_marker_matches && runtime_main_tag_matches_source; then
+                repair_interrupted=1
+                echo "Current main advanced, but this run owns an interrupted runtime-main mutation; repairing its coherent generation first" >&2
+              else
+                echo "Refusing stale runtime-main publication without an owned interrupted mutation" >&2
+                exit 1
+              fi
+            fi
 
             release_tag="runtime-main"
             release_title="idresolver runtime-main (${GITHUB_SHA::12})"
+
+            # Persist intent before the first destructive mutation. A stale rerun
+            # may use this marker only if runtime-main still points to its exact
+            # source SHA, so it cannot overwrite a newer successful generation.
+            if [[ "$repair_interrupted" == 0 ]]; then
+              write_runtime_main_mutation_marker || {
+                echo "Could not persist runtime-main mutation marker" >&2
+                exit 1
+              }
+            fi
 
             # The lock serializes every mutable runtime-main publisher across
             # source SHAs. The manifest is the commit point: after destructive
@@ -395,6 +456,10 @@ jobs:
               --title "$release_title" \
               --notes-file "$notes_file" \
               --prerelease
+            clear_runtime_main_mutation_marker || {
+              echo "runtime-main is coherent but mutation marker cleanup failed; refusing success so a rerun can clean it safely" >&2
+              exit 1
+            }
           else
             release_tag="$RELEASE_CHANNEL"
             [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" == "$release_tag" && "$release_tag" == v* ]] || {
