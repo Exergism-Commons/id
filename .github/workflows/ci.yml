@@ -48,6 +48,11 @@ jobs:
       - run: go vet ./...
       - name: Validate deployment bootstrap
         run: bash -n deploy/setup-digitalocean.sh
+      - name: Validate runtime release workflow YAML
+        shell: bash
+        run: |
+          set -euo pipefail
+          ruby -e 'require "yaml"; YAML.load_file(ARGV[0], aliases: true)' .github/workflows/runtime-release.yml
       - name: Validate release recovery invariants
         shell: bash
         run: |
