@@ -19,7 +19,10 @@ set -Eeuo pipefail
 #   ENABLE_UFW=1
 #
 # Runtime binaries are built by GitHub Actions and published as GitHub Release
-# assets. This host does not need a Go toolchain and does not compile source.
+# assets. DEPLOYMENT_MANIFEST.json is the single deployment snapshot binding the
+# exact source commit to the architecture-specific runtime digest; bootstrap
+# must never compose SOURCE_COMMIT/SHA256SUMS/runtime independently.
+# This host does not need a Go toolchain and does not compile source.
 # DNS is intentionally NOT changed by this script. Point id.exergism.org to the
 # Droplet only after the local resolver and Caddy configuration are healthy.
 
@@ -84,7 +87,7 @@ case "$arch" in
   amd64|arm64) ;;
   *) die "Unsupported CPU architecture for idresolver release assets: $arch" ;;
 esac
-asset="idresolver-linux-${arch}"
+expected_asset="idresolver-linux-${arch}"
 
 download_release_asset() {
   local name="$1" target="$2"
@@ -98,24 +101,35 @@ download_release_asset() {
     -o "$target"
 }
 
-log "Downloading prebuilt idresolver release ${RELEASE_TAG}"
+log "Downloading deployment snapshot for ${RELEASE_TAG}"
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 
-download_release_asset SOURCE_COMMIT "${tmpdir}/SOURCE_COMMIT"
-download_release_asset SHA256SUMS "${tmpdir}/SHA256SUMS"
+download_release_asset DEPLOYMENT_MANIFEST.json "${tmpdir}/DEPLOYMENT_MANIFEST.json"
+
+jq -e \
+  --arg repo "Exergism-Commons/id" \
+  --arg tag "$RELEASE_TAG" \
+  --arg arch "$arch" \
+  --arg asset "$expected_asset" \
+  '.schema_version == "0.1"
+   and .repository == $repo
+   and .release_tag == $tag
+   and (.source_commit | type == "string" and test("^[0-9a-f]{40}$"))
+   and (.assets[$arch].name == $asset)
+   and (.assets[$arch].sha256 | type == "string" and test("^[0-9a-f]{64}$"))' \
+  "${tmpdir}/DEPLOYMENT_MANIFEST.json" >/dev/null \
+  || die "DEPLOYMENT_MANIFEST.json is invalid for ${RELEASE_TAG}/${arch}."
+
+source_commit="$(jq -r '.source_commit' "${tmpdir}/DEPLOYMENT_MANIFEST.json")"
+asset="$(jq -r --arg arch "$arch" '.assets[$arch].name' "${tmpdir}/DEPLOYMENT_MANIFEST.json")"
+expected_checksum="$(jq -r --arg arch "$arch" '.assets[$arch].sha256' "${tmpdir}/DEPLOYMENT_MANIFEST.json")"
+manifest_checksum="$(sha256sum "${tmpdir}/DEPLOYMENT_MANIFEST.json" | awk '{print $1}')"
+
 download_release_asset "$asset" "${tmpdir}/${asset}"
-
-source_commit="$(tr -d '\r\n' < "${tmpdir}/SOURCE_COMMIT")"
-[[ "$source_commit" =~ ^[0-9a-f]{40}$ ]] \
-  || die "Release SOURCE_COMMIT is not a valid Git commit SHA."
-
-expected_checksum="$(awk -v asset="$asset" '$2 == asset {print $1}' "${tmpdir}/SHA256SUMS")"
-[[ "$expected_checksum" =~ ^[0-9a-f]{64}$ ]] \
-  || die "Could not find a valid SHA-256 for ${asset} in the release checksum file."
 actual_checksum="$(sha256sum "${tmpdir}/${asset}" | awk '{print $1}')"
 [[ "$actual_checksum" == "$expected_checksum" ]] \
-  || die "SHA-256 verification failed for ${asset}."
+  || die "Runtime ${asset} does not match the captured deployment manifest."
 chmod 0755 "${tmpdir}/${asset}"
 
 log "Installing latest Caddy stable from the official repository"
@@ -158,7 +172,7 @@ git -C "$APP_DIR" clean -fdx
 
 checked_out_commit="$(git -C "$APP_DIR" rev-parse HEAD)"
 [[ "$checked_out_commit" == "$source_commit" ]] \
-  || die "Release binary source ${source_commit} does not match checked-out repository ${checked_out_commit}."
+  || die "Captured manifest source ${source_commit} does not match checked-out tag ${checked_out_commit}."
 
 chown -R root:root "$APP_DIR"
 chmod -R a+rX "$APP_DIR"
@@ -177,7 +191,12 @@ done
 printf '%s\n' "$source_commit" > "${DOC_DIR}/source-revision.txt"
 printf '%s\n' "$RELEASE_TAG" > "${DOC_DIR}/release-tag.txt"
 printf '%s  %s\n' "$expected_checksum" "$asset" > "${DOC_DIR}/binary-sha256.txt"
-chmod 0644 "${DOC_DIR}/source-revision.txt" "${DOC_DIR}/release-tag.txt" "${DOC_DIR}/binary-sha256.txt"
+printf '%s\n' "$manifest_checksum" > "${DOC_DIR}/deployment-manifest-sha256.txt"
+chmod 0644 \
+  "${DOC_DIR}/source-revision.txt" \
+  "${DOC_DIR}/release-tag.txt" \
+  "${DOC_DIR}/binary-sha256.txt" \
+  "${DOC_DIR}/deployment-manifest-sha256.txt"
 
 log "Installing systemd service"
 cat > "$SERVICE_FILE" <<EOF
@@ -255,6 +274,7 @@ printf '\n\033[1;32mSetup complete.\033[0m\n\n'
 printf 'Release:   %s\n' "$RELEASE_TAG"
 printf 'Source:    %s\n' "$source_commit"
 printf 'Binary:    %s\n' "$asset"
+printf 'Manifest:  %s\n' "$manifest_checksum"
 printf 'Resolver:  http://%s (loopback only)\n' "$LISTEN_ADDR"
 printf 'Domain:    https://%s\n' "$DOMAIN"
 printf 'Caddy:     %s\n' "$(caddy version | head -n1)"

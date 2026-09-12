@@ -48,6 +48,26 @@ jobs:
       - run: go vet ./...
       - name: Validate deployment bootstrap
         run: bash -n deploy/setup-digitalocean.sh
+      - name: Validate runtime release workflow YAML
+        shell: bash
+        run: |
+          set -euo pipefail
+          ruby -e 'require "yaml"; YAML.load_file(ARGV[0], aliases: true)' .github/workflows/runtime-release.yml
+      - name: Validate release recovery invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'EC-Publisher: Exergism-Commons/id/.github/workflows/runtime-release.yml' .github/workflows/runtime-release.yml
+          grep -Fq 'EC-Source-Commit: ${GITHUB_SHA}' .github/workflows/runtime-release.yml
+          grep -Fq 'release_owner_source()' .github/workflows/runtime-release.yml
+          grep -Fq 'validate_published_release_manifest()' .github/workflows/runtime-release.yml
+          grep -Fq 'Removing stale/incomplete owned published release' .github/workflows/runtime-release.yml
+          grep -Fq 'runtime_main_mutation_marker_matches()' .github/workflows/runtime-release.yml
+          grep -Fq 'runtime_main_tag_matches_source()' .github/workflows/runtime-release.yml
+          grep -Fq 'write_runtime_main_mutation_marker' .github/workflows/runtime-release.yml
+          grep -Fq 'clear_runtime_main_mutation_marker' .github/workflows/runtime-release.yml
+          grep -Fq 'Admitting stale exact-main rerun for locked recovery decision' .github/workflows/runtime-release.yml
+          grep -Fq 'concurrency_group="runtime-release-main-${GITHUB_SHA}-${GITHUB_RUN_ID}"' .github/workflows/runtime-release.yml
       - name: Enforce reviewed redistribution surface
         shell: bash
         run: |

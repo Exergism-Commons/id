@@ -9,13 +9,69 @@ on:
 
 permissions:
   contents: write
-
-concurrency:
-  group: runtime-release-${{ github.ref }}
-  cancel-in-progress: true
+  actions: read
 
 jobs:
+  classify:
+    runs-on: ubuntu-latest
+    outputs:
+      authorized: ${{ steps.classify.outputs.authorized }}
+      concurrency_group: ${{ steps.classify.outputs.concurrency_group }}
+      release_channel: ${{ steps.classify.outputs.release_channel }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - id: classify
+        name: Classify exact ref and freshness
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          authorized=false
+          concurrency_group="runtime-release-invalid-${GITHUB_RUN_ID}"
+          release_channel="invalid"
+
+          if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
+            # Admit every exact-main run, including reruns whose SHA is no
+            # longer the current tip. Include GITHUB_RUN_ID so unrelated runs
+            # for the same SHA cannot evict an owning recovery from GitHub's
+            # single-pending concurrency slot. Re-run jobs keeps the same run
+            # ID, so attempts belonging to one recovery still serialize together.
+            # Freshness or marked-interruption recovery is decided only later
+            # while holding the destination lock.
+            git fetch --no-tags --force origin \
+              refs/heads/main:refs/remotes/origin/main
+            remote_main="$(git rev-parse refs/remotes/origin/main)"
+            authorized=true
+            concurrency_group="runtime-release-main-${GITHUB_SHA}-${GITHUB_RUN_ID}"
+            release_channel="runtime-main"
+            if [[ "$GITHUB_SHA" != "$remote_main" ]]; then
+              echo "Admitting stale exact-main rerun for locked recovery decision: $GITHUB_SHA != current main $remote_main" >&2
+            fi
+          elif [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" == v* ]]; then
+            authorized=true
+            tag_identity="$(printf '%s' "$GITHUB_REF_NAME" | sha256sum | awk '{print $1}')"
+            target_identity="$(git rev-parse "${GITHUB_SHA}^{commit}")"
+            # Different targets of a force-moved version tag must never share
+            # GitHub's single-pending concurrency slot. Destination mutation is
+            # serialized later by a lock derived only from the exact tag name.
+            concurrency_group="runtime-release-tag-${tag_identity}-${target_identity}"
+            release_channel="$GITHUB_REF_NAME"
+          else
+            echo "Refusing unauthorized runtime release ref: $GITHUB_REF" >&2
+          fi
+
+          printf 'authorized=%s\n' "$authorized" >> "$GITHUB_OUTPUT"
+          printf 'concurrency_group=%s\n' "$concurrency_group" >> "$GITHUB_OUTPUT"
+          printf 'release_channel=%s\n' "$release_channel" >> "$GITHUB_OUTPUT"
+
   build-and-publish:
+    needs: classify
+    if: needs.classify.outputs.authorized == 'true'
+    concurrency:
+      group: ${{ needs.classify.outputs.concurrency_group }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -38,6 +94,8 @@ jobs:
 
       - name: Build Linux runtime assets
         shell: bash
+        env:
+          RELEASE_CHANNEL: ${{ needs.classify.outputs.release_channel }}
         run: |
           set -euo pipefail
           mkdir -p dist
@@ -54,9 +112,58 @@ jobs:
           )
           printf '%s\n' "$GITHUB_SHA" > dist/SOURCE_COMMIT
 
+          [[ "$RELEASE_CHANNEL" == "runtime-main" || "$RELEASE_CHANNEL" == v* ]] || {
+            echo "Classifier returned invalid release channel: $RELEASE_CHANNEL" >&2
+            exit 1
+          }
+
+          python3 - "$GITHUB_REPOSITORY" "$RELEASE_CHANNEL" "$GITHUB_SHA" <<'PY'
+          import datetime
+          import hashlib
+          import json
+          import pathlib
+          import sys
+
+          repository, release_tag, source_commit = sys.argv[1:]
+          dist = pathlib.Path("dist")
+          assets = {}
+          for arch in ("amd64", "arm64"):
+              name = f"idresolver-linux-{arch}"
+              data = (dist / name).read_bytes()
+              assets[arch] = {
+                  "name": name,
+                  "sha256": hashlib.sha256(data).hexdigest(),
+              }
+          manifest = {
+              "schema_version": "0.1",
+              "repository": repository,
+              "release_tag": release_tag,
+              "source_commit": source_commit,
+              "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z"),
+              "assets": assets,
+          }
+          (dist / "DEPLOYMENT_MANIFEST.json").write_text(
+              json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+          python3 - <<'PY'
+          import json
+          import pathlib
+          import re
+          m = json.loads(pathlib.Path("dist/DEPLOYMENT_MANIFEST.json").read_text())
+          assert m["schema_version"] == "0.1"
+          assert m["repository"] == "Exergism-Commons/id"
+          assert re.fullmatch(r"[0-9a-f]{40}", m["source_commit"])
+          for arch in ("amd64", "arm64"):
+              assert re.fullmatch(r"[0-9a-f]{64}", m["assets"][arch]["sha256"])
+          PY
+
           {
             printf 'source_commit=%s\n' "$GITHUB_SHA"
             printf 'workflow_run=%s\n' "$GITHUB_RUN_ID"
+            printf 'deployment_manifest_sha256=%s\n' "$(sha256sum dist/DEPLOYMENT_MANIFEST.json | awk '{print $1}')"
             go version
             go version -m dist/idresolver-linux-amd64
             go version -m dist/idresolver-linux-arm64
@@ -66,34 +173,275 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_CHANNEL: ${{ needs.classify.outputs.release_channel }}
         run: |
           set -euo pipefail
 
-          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
-            release_tag="$GITHUB_REF_NAME"
-            release_title="idresolver ${release_tag}"
-            rolling=0
-          else
-            release_tag="runtime-main"
-            release_title="idresolver runtime-main (${GITHUB_SHA::12})"
-            rolling=1
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git tag -f "$release_tag" "$GITHUB_SHA"
-            git push --force origin "refs/tags/${release_tag}"
-          fi
+          lock_ref=""
+          lock_commit=""
+          lock_acquired=0
+          lock_local_ref="refs/ec-release-lock/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+
+          release_publication_lock() {
+            [[ "$lock_acquired" == 1 && -n "$lock_commit" && -n "$lock_ref" ]] || return 0
+            remote_oid="$(git ls-remote --refs origin "$lock_ref" | awk '{print $1}')"
+            if [[ "$remote_oid" == "$lock_commit" ]]; then
+              git push \
+                --force-with-lease="${lock_ref}:${lock_commit}" \
+                origin ":${lock_ref}" >/dev/null 2>&1 || true
+            fi
+            git update-ref -d "$lock_local_ref" >/dev/null 2>&1 || true
+          }
+
+          acquire_publication_lock() {
+            local label="$1" tree holder status remote_oid run_meta http_code reclaim
+            [[ -n "$lock_ref" ]] || return 1
+            tree="$(git rev-parse "${GITHUB_SHA}^{tree}")"
+            lock_commit="$(printf 'runtime-release-publish-lock run=%s label=%s\n' "$GITHUB_RUN_ID" "$label" \
+              | git commit-tree "$tree" -p "$GITHUB_SHA")"
+
+            for _ in {1..120}; do
+              if git push origin "${lock_commit}:${lock_ref}" >/dev/null 2>&1; then
+                lock_acquired=1
+                return 0
+              fi
+
+              remote_oid="$(git ls-remote --refs origin "$lock_ref" | awk '{print $1}')"
+              if [[ ! "$remote_oid" =~ ^[0-9a-f]{40}$ ]]; then
+                sleep 2
+                continue
+              fi
+
+              git update-ref -d "$lock_local_ref" >/dev/null 2>&1 || true
+              git fetch --no-tags --force origin \
+                "${lock_ref}:${lock_local_ref}" >/dev/null 2>&1 || {
+                  sleep 2
+                  continue
+                }
+              holder="$(git show -s --format=%B "$lock_local_ref" \
+                | sed -n 's/^runtime-release-publish-lock run=\([0-9][0-9]*\) .*/\1/p' \
+                | head -n1)"
+
+              if [[ "$holder" == "$GITHUB_RUN_ID" ]]; then
+                # GITHUB_RUN_ID survives "Re-run jobs". Reclaim only the exact
+                # lock object observed from an earlier attempt of this run.
+                git push \
+                  --force-with-lease="${lock_ref}:${remote_oid}" \
+                  origin ":${lock_ref}" >/dev/null 2>&1 || true
+                sleep 1
+                continue
+              fi
+
+              if [[ "$holder" =~ ^[0-9]+$ ]]; then
+                run_meta="$(mktemp)"
+                http_code="$(curl -sS -o "$run_meta" -w '%{http_code}' \
+                  -H 'Accept: application/vnd.github+json' \
+                  -H "Authorization: Bearer ${GH_TOKEN}" \
+                  -H 'X-GitHub-Api-Version: 2022-11-28' \
+                  "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${holder}" || true)"
+                reclaim=0
+                if [[ "$http_code" == "200" ]]; then
+                  status="$(python3 - "$run_meta" <<'PY'
+          import json, pathlib, sys
+          print(json.loads(pathlib.Path(sys.argv[1]).read_text()).get("status", ""))
+          PY
+          )"
+                  [[ "$status" == "completed" ]] && reclaim=1
+                elif [[ "$http_code" == "404" ]]; then
+                  # The authenticated same-repository run lookup definitively
+                  # no longer resolves. Reclaim only the exact OID we observed;
+                  # transient/network/authorization failures never reclaim.
+                  reclaim=1
+                fi
+                rm -f "$run_meta"
+
+                if [[ "$reclaim" == 1 ]]; then
+                  git push \
+                    --force-with-lease="${lock_ref}:${remote_oid}" \
+                    origin ":${lock_ref}" >/dev/null 2>&1 || true
+                  sleep 1
+                  continue
+                fi
+              fi
+              sleep 2
+            done
+            return 1
+          }
+
+          check_current_main() {
+            git fetch --no-tags --force origin \
+              refs/heads/main:refs/remotes/origin/main || return 1
+            remote_main="$(git rev-parse refs/remotes/origin/main)" || return 1
+            [[ "$GITHUB_SHA" == "$remote_main" ]]
+          }
+
+          runtime_main_tag_matches_source() {
+            local verify_ref remote_commit
+            verify_ref="refs/ec-runtime-main-verify/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+            git update-ref -d "$verify_ref" >/dev/null 2>&1 || true
+            git fetch --no-tags --force origin "refs/tags/runtime-main:${verify_ref}" >/dev/null 2>&1 || return 1
+            remote_commit="$(git rev-parse "${verify_ref}^{commit}" 2>/dev/null)" || {
+              git update-ref -d "$verify_ref" >/dev/null 2>&1 || true
+              return 1
+            }
+            git update-ref -d "$verify_ref" >/dev/null 2>&1 || true
+            [[ "$remote_commit" == "$(git rev-parse "${GITHUB_SHA}^{commit}")" ]]
+          }
+
+          runtime_main_mutation_marker_ref() {
+            printf 'refs/tags/runtime-main-mutation-%s\n' "$GITHUB_RUN_ID"
+          }
+
+          write_runtime_main_mutation_marker() {
+            local marker_ref marker_commit tree
+            marker_ref="$(runtime_main_mutation_marker_ref)"
+            tree="$(git rev-parse "${GITHUB_SHA}^{tree}")" || return 1
+            marker_commit="$(printf 'runtime-main-mutation run=%s source=%s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" | git commit-tree "$tree" -p "$GITHUB_SHA")" || return 1
+            git push --force-with-lease="$marker_ref" origin "${marker_commit}:${marker_ref}" >/dev/null 2>&1
+          }
+
+          runtime_main_mutation_marker_matches() {
+            local marker_ref local_ref body source run
+            marker_ref="$(runtime_main_mutation_marker_ref)"
+            local_ref="refs/ec-runtime-main-marker/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+            git update-ref -d "$local_ref" >/dev/null 2>&1 || true
+            git fetch --no-tags --force origin "${marker_ref}:${local_ref}" >/dev/null 2>&1 || return 1
+            body="$(git show -s --format=%B "$local_ref")" || return 1
+            git update-ref -d "$local_ref" >/dev/null 2>&1 || true
+            run="$(printf '%s\n' "$body" | sed -n 's/^runtime-main-mutation run=\([0-9][0-9]*\) source=.*/\1/p' | head -n1)"
+            source="$(printf '%s\n' "$body" | sed -n 's/^runtime-main-mutation run=[0-9][0-9]* source=\([0-9a-f][0-9a-f]*\)$/\1/p' | head -n1)"
+            [[ "$run" == "$GITHUB_RUN_ID" && "$source" == "$GITHUB_SHA" ]]
+          }
+
+          clear_runtime_main_mutation_marker() {
+            local marker_ref remote_oid
+            marker_ref="$(runtime_main_mutation_marker_ref)"
+            remote_oid="$(git ls-remote --refs origin "$marker_ref" | awk '{print $1}')"
+            [[ "$remote_oid" =~ ^[0-9a-f]{40}$ ]] || return 0
+            git push --force-with-lease="${marker_ref}:${remote_oid}" origin ":${marker_ref}" >/dev/null 2>&1
+          }
+          verify_remote_version_tag() {
+            local tag="$1" verify_ref expected_commit remote_commit
+            expected_commit="$(git rev-parse "${GITHUB_SHA}^{commit}")" || return 1
+            verify_ref="refs/ec-release-verify/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+            git update-ref -d "$verify_ref" >/dev/null 2>&1 || true
+            if ! git fetch --no-tags --force origin "refs/tags/${tag}:${verify_ref}" >/dev/null 2>&1; then
+              return 1
+            fi
+            remote_commit="$(git rev-parse "${verify_ref}^{commit}" 2>/dev/null)" || {
+              git update-ref -d "$verify_ref" >/dev/null 2>&1 || true
+              return 1
+            }
+            git update-ref -d "$verify_ref" >/dev/null 2>&1 || true
+            [[ "$remote_commit" == "$expected_commit" ]]
+          }
+
+          release_owner_source() {
+            local tag="$1" body publisher source
+            body="$(gh release view "$tag" --json body --jq .body 2>/dev/null)" || return 1
+            publisher="$(printf '%s\n' "$body" | sed -n 's/^EC-Publisher: //p' | head -n1)"
+            source="$(printf '%s\n' "$body" | sed -n 's/^EC-Source-Commit: \([0-9a-f][0-9a-f]*\)$/\1/p' | head -n1)"
+            [[ "$publisher" == "Exergism-Commons/id/.github/workflows/runtime-release.yml" ]] || return 1
+            [[ "$source" =~ ^[0-9a-f]{40}$ ]] || return 1
+            printf '%s\n' "$source"
+          }
+
+          validate_published_release_manifest() {
+            local tag="$1" expected="$2" tmp rc=0
+            tmp="$(mktemp -d)"
+            gh release download "$tag" --pattern DEPLOYMENT_MANIFEST.json --dir "$tmp" >/dev/null 2>&1 || {
+              rm -rf "$tmp"
+              return 1
+            }
+            python3 - "$tmp/DEPLOYMENT_MANIFEST.json" "$GITHUB_REPOSITORY" "$tag" "$expected" <<'PY' || rc=$?
+          import json, pathlib, re, sys
+          path, repository, tag, expected = sys.argv[1:]
+          obj = json.loads(pathlib.Path(path).read_text())
+          assert obj.get("schema_version") == "0.1"
+          assert obj.get("repository") == repository
+          assert obj.get("release_tag") == tag
+          assert obj.get("source_commit") == expected
+          assert re.fullmatch(r"[0-9a-f]{40}", expected)
+          PY
+            rm -rf "$tmp"
+            return "$rc"
+          }
+
+          cleanup_version_release() {
+            local tag="$1"
+            gh release delete "$tag" --yes >/dev/null 2>&1 || {
+              echo "Failed to remove inconsistent release ${tag}" >&2
+              return 1
+            }
+          }
 
           notes_file="$(mktemp)"
+          trap 'release_publication_lock; rm -f "$notes_file"' EXIT
           cat > "$notes_file" <<EOF
           Automated Linux runtime build for Exergism Commons idresolver.
 
           Source commit: \`${GITHUB_SHA}\`
+          EC-Publisher: Exergism-Commons/id/.github/workflows/runtime-release.yml
+          EC-Source-Commit: ${GITHUB_SHA}
 
-          Assets are built with CGO disabled for linux/amd64 and linux/arm64. Verify the selected binary against \`SHA256SUMS\` before deployment. \`SOURCE_COMMIT\` binds the runtime artifact to the repository revision containing the registry, published representations and the CI-verified generated term catalog. Deployment serves that exact release-matched repository state and does not regenerate semantic artifacts on the host.
+          \`DEPLOYMENT_MANIFEST.json\` is the authoritative deployment snapshot binding this source revision to each runtime SHA-256. Rolling consumers must capture this manifest first and reject any runtime that does not match it. \`SOURCE_COMMIT\` and \`SHA256SUMS\` are compatibility metadata only.
           EOF
 
-          if gh release view "$release_tag" >/dev/null 2>&1; then
+          if [[ "$RELEASE_CHANNEL" == "runtime-main" ]]; then
+            [[ "$GITHUB_REF" == "refs/heads/main" ]] || {
+              echo "runtime-main may only be published from exact refs/heads/main" >&2
+              exit 1
+            }
+
+            lock_ref="refs/tags/runtime-main-publish-lock"
+            acquire_publication_lock "runtime-main" || {
+              echo "Could not acquire runtime-main publication lock" >&2
+              exit 1
+            }
+
+            repair_interrupted=0
+            if ! check_current_main; then
+              if runtime_main_mutation_marker_matches && runtime_main_tag_matches_source; then
+                repair_interrupted=1
+                echo "Current main advanced, but this run owns an interrupted runtime-main mutation; repairing its coherent generation first" >&2
+              else
+                echo "Refusing stale runtime-main publication without an owned interrupted mutation" >&2
+                exit 1
+              fi
+            fi
+
+            release_tag="runtime-main"
+            release_title="idresolver runtime-main (${GITHUB_SHA::12})"
+
+            # Persist intent before the first destructive mutation. A stale rerun
+            # may use this marker only if runtime-main still points to its exact
+            # source SHA, so it cannot overwrite a newer successful generation.
+            if [[ "$repair_interrupted" == 0 ]]; then
+              write_runtime_main_mutation_marker || {
+                echo "Could not persist runtime-main mutation marker" >&2
+                exit 1
+              }
+            fi
+
+            # The lock serializes every mutable runtime-main publisher across
+            # source SHAs. The manifest is the commit point: after destructive
+            # mutation starts, this publisher always completes its coherent
+            # generation even if main advances. A newer publisher may replace
+            # the whole generation after acquiring this same lock.
+            git tag -f "$release_tag" "$GITHUB_SHA"
+            git push --force origin "refs/tags/${release_tag}"
+
+            if ! gh release view "$release_tag" >/dev/null 2>&1; then
+              gh release create "$release_tag" \
+                --verify-tag \
+                --title "$release_title" \
+                --notes-file "$notes_file" \
+                --prerelease
+            fi
+
             gh release upload "$release_tag" \
               dist/idresolver-linux-amd64 \
               dist/idresolver-linux-arm64 \
@@ -101,34 +449,106 @@ jobs:
               dist/SOURCE_COMMIT \
               dist/BUILD_INFO \
               --clobber
-            if [[ "$rolling" == "1" ]]; then
-              gh release edit "$release_tag" --title "$release_title" --notes-file "$notes_file" --prerelease
-            else
-              gh release edit "$release_tag" --title "$release_title" --notes-file "$notes_file"
+
+            if ! check_current_main; then
+              echo "main advanced during locked publication; completing this coherent generation before the newer publisher replaces it" >&2
             fi
+
+            gh release upload "$release_tag" dist/DEPLOYMENT_MANIFEST.json --clobber
+            gh release edit "$release_tag" \
+              --title "$release_title" \
+              --notes-file "$notes_file" \
+              --prerelease
+            clear_runtime_main_mutation_marker || {
+              echo "runtime-main is coherent but mutation marker cleanup failed; refusing success so a rerun can clean it safely" >&2
+              exit 1
+            }
           else
-            if [[ "$rolling" == "1" ]]; then
-              gh release create "$release_tag" \
-                dist/idresolver-linux-amd64 \
-                dist/idresolver-linux-arm64 \
-                dist/SHA256SUMS \
-                dist/SOURCE_COMMIT \
-                dist/BUILD_INFO \
-                --verify-tag \
-                --title "$release_title" \
-                --notes-file "$notes_file" \
-                --prerelease
-            else
-              gh release create "$release_tag" \
-                dist/idresolver-linux-amd64 \
-                dist/idresolver-linux-arm64 \
-                dist/SHA256SUMS \
-                dist/SOURCE_COMMIT \
-                dist/BUILD_INFO \
-                --verify-tag \
-                --title "$release_title" \
-                --notes-file "$notes_file"
+            release_tag="$RELEASE_CHANNEL"
+            [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" == "$release_tag" && "$release_tag" == v* ]] || {
+              echo "Only exact case-sensitive v* tags may publish versioned runtime releases" >&2
+              exit 1
+            }
+
+            tag_identity="$(printf '%s' "$release_tag" | sha256sum | awk '{print $1}')"
+            lock_ref="refs/tags/runtime-version-publish-lock-${tag_identity}"
+            acquire_publication_lock "version:${tag_identity}" || {
+              echo "Could not acquire publication lock for ${release_tag}" >&2
+              exit 1
+            }
+
+            verify_remote_version_tag "$release_tag" || {
+              echo "Remote version tag no longer targets this build revision; refusing release mutation" >&2
+              exit 1
+            }
+
+            release_title="idresolver ${release_tag}"
+            if gh release view "$release_tag" >/dev/null 2>&1; then
+              existing_tag="$(gh release view "$release_tag" --json tagName --jq .tagName)"
+              is_draft="$(gh release view "$release_tag" --json isDraft --jq .isDraft)"
+              owner_source="$(release_owner_source "$release_tag" || true)"
+              [[ "$existing_tag" == "$release_tag" ]] || {
+                echo "Existing release tag identity mismatch; refusing mutation" >&2
+                exit 1
+              }
+              [[ "$owner_source" =~ ^[0-9a-f]{40}$ ]] || {
+                echo "Existing release is not owned by the EC runtime publisher; refusing mutation" >&2
+                exit 1
+              }
+              verify_remote_version_tag "$release_tag" || {
+                echo "Remote version tag moved before release recovery; refusing mutation" >&2
+                exit 1
+              }
+
+              if [[ "$is_draft" == "false" && "$owner_source" == "$GITHUB_SHA" ]] \
+                 && validate_published_release_manifest "$release_tag" "$GITHUB_SHA"; then
+                echo "Versioned runtime release ${release_tag} is already published coherently for this source"
+                exit 0
+              fi
+
+              if [[ "$is_draft" == "true" ]]; then
+                echo "Removing incomplete owned draft release ${release_tag} before retry" >&2
+              else
+                echo "Removing stale/incomplete owned published release ${release_tag} before repair" >&2
+              fi
+              cleanup_version_release "$release_tag" || exit 1
+            fi
+
+            verify_remote_version_tag "$release_tag" || {
+              echo "Remote version tag moved before draft creation; refusing publication" >&2
+              exit 1
+            }
+            gh release create "$release_tag" \
+              --verify-tag \
+              --draft \
+              --title "$release_title" \
+              --notes-file "$notes_file"
+
+            if ! verify_remote_version_tag "$release_tag"; then
+              echo "Remote version tag moved after draft creation; removing stale draft" >&2
+              cleanup_version_release "$release_tag" || true
+              exit 1
+            fi
+
+            gh release upload "$release_tag" \
+              dist/idresolver-linux-amd64 \
+              dist/idresolver-linux-arm64 \
+              dist/SHA256SUMS \
+              dist/SOURCE_COMMIT \
+              dist/BUILD_INFO \
+              dist/DEPLOYMENT_MANIFEST.json
+
+            if ! verify_remote_version_tag "$release_tag"; then
+              echo "Remote version tag moved during asset upload; removing stale draft" >&2
+              cleanup_version_release "$release_tag" || true
+              exit 1
+            fi
+
+            gh release edit "$release_tag" --draft=false
+
+            if ! verify_remote_version_tag "$release_tag"; then
+              echo "Remote version tag moved during final publication; removing inconsistent release" >&2
+              cleanup_version_release "$release_tag" || true
+              exit 1
             fi
           fi
-
-          rm -f "$notes_file"
