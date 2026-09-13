@@ -298,9 +298,25 @@ jobs:
           write_runtime_main_mutation_marker() {
             local marker_ref marker_commit tree
             marker_ref="$(runtime_main_mutation_marker_ref)"
+
+            # A job rerun may inherit the exact marker created by an
+            # interrupted prior attempt. Reuse it instead of manufacturing a
+            # new commit/OID and then racing Git's implicit lease state.
+            if runtime_main_mutation_marker_matches; then
+              echo "Reusing existing runtime-main mutation marker for run ${GITHUB_RUN_ID}."
+              return 0
+            fi
+
             tree="$(git rev-parse "${GITHUB_SHA}^{tree}")" || return 1
             marker_commit="$(printf 'runtime-main-mutation run=%s source=%s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" | git commit-tree "$tree" -p "$GITHUB_SHA")" || return 1
-            git push --force-with-lease="$marker_ref" origin "${marker_commit}:${marker_ref}" >/dev/null 2>&1
+
+            # Creation is permitted only while the remote marker is absent.
+            # If the push response is lost or a matching marker appears in the
+            # meantime, accept only that exact run/source marker.
+            if git push --force-with-lease="${marker_ref}:" origin "${marker_commit}:${marker_ref}" >/dev/null 2>&1; then
+              return 0
+            fi
+            runtime_main_mutation_marker_matches
           }
 
           runtime_main_mutation_marker_matches() {
