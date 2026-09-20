@@ -171,9 +171,9 @@ env -i \
   EC_NATIVE_AGENT_SHA256="$DA_AGENT_SHA256" \
   "$STAGE/install-id-exergism.sh"
 
-# The installer owns and normally removes its trusted stage after success.
-STAGE=""
-
+# The installer normally removes its trusted stage after success. Keep the
+# pathname until this script exits so our EXIT trap remains a second cleanup
+# layer if the installer ever leaves it behind.
 log "Validating installed production configuration"
 [[ -f "$ENV_FILE" && ! -L "$ENV_FILE" ]] || die "Installed environment file is missing or unsafe: $ENV_FILE"
 [[ "$(stat -c '%u' -- "$ENV_FILE")" == "0" ]] || die "$ENV_FILE is not root-owned."
