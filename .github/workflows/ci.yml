@@ -72,11 +72,71 @@ jobs:
           grep -Fq 'findmnt -n -o OPTIONS -T "$STAGE"' "$script"
           ! grep -Fq '/run/ec-deployment-attestation-installer' "$script"
           grep -Fq 'EC_INSTALLER_SOURCE_ROOT="$SOURCE_ROOT"' "$script"
+          grep -Fq 'detect_actionable_install_journal()' "$script"
+          grep -Fq 'ACTIONABLE_INSTALL_PHASE=""' "$script"
+          grep -Fq 'deferring runtime health checks until trusted recovery' "$script"
           grep -Fq 'EC_NATIVE_AGENT_SHA256="$DA_AGENT_SHA256"' "$script"
           grep -Fq 'EC_RELEASE_TAG=runtime-main' "$script"
           grep -Fq '"$ARTIFACT_FENCE_AUDITOR"' "$script"
           grep -Fq '"$AGENT" health' "$script"
           ! grep -Eiq 'deployment-attestation/(latest|releases/latest)' "$script"
+
+      - name: Validate interrupted handoff recovery admission
+        shell: bash
+        run: |
+          set -euo pipefail
+          script=deploy/install-deployment-attestation.sh
+
+          sudo bash -s -- "$script" <<'SH'
+          set -euo pipefail
+          script="$1"
+          helper="$(mktemp)"
+          state_root=""
+
+          cleanup_test() {
+            rm -f -- "$helper"
+            [[ -n "$state_root" ]] && rm -rf -- "$state_root"
+          }
+          trap cleanup_test EXIT
+
+          sed -n '/^path_exists_any() {/,/^}$/p' "$script" > "$helper"
+          sed -n '/^detect_actionable_install_journal() {/,/^}$/p' "$script" >> "$helper"
+          # shellcheck disable=SC1090
+          source "$helper"
+
+          die() {
+            printf 'expected recovery-admission rejection: %s\n' "$*" >&2
+            exit 1
+          }
+
+          SERVICE=id.exergism.org
+          state_root="$(mktemp -d)"
+          INSTALL_STATE_ROOT="$state_root/install"
+          install -d -o root -g root -m 0700 "$INSTALL_STATE_ROOT"
+
+          if detect_actionable_install_journal; then
+            echo "Empty install state was incorrectly treated as actionable." >&2
+            exit 1
+          fi
+
+          install -d -o root -g root -m 0700 "$INSTALL_STATE_ROOT/$SERVICE.recovering"
+          detect_actionable_install_journal
+          [[ "$ACTIONABLE_INSTALL_PHASE" == "recovering" ]]
+
+          install -d -o root -g root -m 0700 "$INSTALL_STATE_ROOT/$SERVICE.pending"
+          if (detect_actionable_install_journal); then
+            echo "Multiple actionable journals were incorrectly accepted." >&2
+            exit 1
+          fi
+
+          rm -rf -- "$INSTALL_STATE_ROOT/$SERVICE.pending"
+          chmod 0755 "$INSTALL_STATE_ROOT/$SERVICE.recovering"
+          if (detect_actionable_install_journal); then
+            echo "Unsafe actionable journal permissions were incorrectly accepted." >&2
+            exit 1
+          fi
+          SH
+
       - name: Validate runtime release workflow YAML
         shell: bash
         run: |
