@@ -59,15 +59,18 @@ jobs:
           set -euo pipefail
           script=deploy/install-deployment-attestation.sh
 
-          grep -Fq 'DA_VERSION="v0.1.1"' "$script"
-          grep -Fq 'DA_COMMIT="80c0fa06b8fac71332f0a2fdd5c409e666d91955"' "$script"
-          grep -Fq 'DA_MANIFEST_SHA256="5fc66e50b542d0d9c2cf4ffb704f201b1ba58ce91fd5cb005684cae84535495d"' "$script"
-          grep -Fq 'DA_INSTALLER_SHA256="14b70c91f6cff93943e4d03dc33bb9c41ab42195e1ab7ff922a0c677f3c8dd2f"' "$script"
-          grep -Fq 'DA_AGENT_SHA256="7fbb723a87cc677721b6fdffd78465f0f31d9b6a83784ac1a5d8d7b58b42c5cf"' "$script"
-          grep -Fq 'DA_SUMS_SHA256="8918b7b016c0fdf58c2c35fe0219d0b0093793dab7d46849efcae9433d8f5309"' "$script"
+          grep -Fq 'DA_VERSION="v0.1.2"' "$script"
+          grep -Fq 'DA_COMMIT="58b99c981172077c8bf87f8bce9be4abd5453fc6"' "$script"
+          grep -Fq 'DA_MANIFEST_SHA256="b578ba03aac749467c5f6923829d754be97ca44c1b34836b830aed6b9d229d53"' "$script"
+          grep -Fq 'DA_INSTALLER_SHA256="6fec54f2115a5906f234ac9e90c1d396ea48d00175a12bf5fb9a8c823ccb2308"' "$script"
+          grep -Fq 'DA_AGENT_SHA256="29eed044bdaf174877f4999699797f3aa5b576bcb957c3917a85ded66f3990c6"' "$script"
+          grep -Fq 'DA_SUMS_SHA256="ed7f89c3ab4343de61881c28ef637b29b105e996a5109d58d7b0785d849e7266"' "$script"
 
           grep -Fq 'sha256sum -c SHA256SUMS' "$script"
           grep -Fq 'EC_INSTALLER_TRUSTED_STAGE="$STAGE"' "$script"
+          grep -Fq 'TRUSTED_STAGE_PARENT="/var/lib/ec-deployment-attestation/bootstrap"' "$script"
+          grep -Fq 'findmnt -n -o OPTIONS -T "$STAGE"' "$script"
+          ! grep -Fq '/run/ec-deployment-attestation-installer' "$script"
           grep -Fq 'EC_INSTALLER_SOURCE_ROOT="$SOURCE_ROOT"' "$script"
           grep -Fq 'EC_NATIVE_AGENT_SHA256="$DA_AGENT_SHA256"' "$script"
           grep -Fq 'EC_RELEASE_TAG=runtime-main' "$script"
