@@ -47,7 +47,7 @@ No Go toolchain, local compilation or build-time swap is required on the Droplet
 
 The resolver release channel is already compatible with `Exergism-Commons/deployment-attestation`: `runtime-main` publishes a `DEPLOYMENT_MANIFEST.json` with repository `Exergism-Commons/id`, the exact source commit, and architecture-keyed runtime SHA-256 values.
 
-After the base resolver/Caddy host exists, use [`install-deployment-attestation.sh`](install-deployment-attestation.sh) for the reviewed handoff. The script pins the exact deployment-attestation release, source commit and release-asset SHA-256 values, uses the privileged trusted-stage installer flow, then verifies agent health, smoke checks, artifact fencing and the periodic timer before declaring the handoff complete.
+After the base resolver/Caddy host exists, use [`install-deployment-attestation.sh`](install-deployment-attestation.sh) for the reviewed handoff. The script pins the exact deployment-attestation release, source commit and release-asset SHA-256 values, uses a root-owned executable trusted stage below `/var/lib/ec-deployment-attestation/bootstrap` (so hardened hosts may keep `/run` mounted `noexec`), then verifies agent health, smoke checks, artifact fencing and the periodic timer before declaring the handoff complete.
 
 Run it only from a reviewed/trusted copy of this repository (or from an exact reviewed commit), not by piping a mutable `main` URL directly into a root shell:
 
