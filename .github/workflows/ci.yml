@@ -46,8 +46,34 @@ jobs:
       - run: go version
       - run: go test ./...
       - run: go vet ./...
-      - name: Validate deployment bootstrap
-        run: bash -n deploy/setup-digitalocean.sh
+      - name: Validate deployment bootstraps
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n deploy/setup-digitalocean.sh
+          bash -n deploy/install-deployment-attestation.sh
+
+      - name: Validate deployment-attestation handoff pins
+        shell: bash
+        run: |
+          set -euo pipefail
+          script=deploy/install-deployment-attestation.sh
+
+          grep -Fq 'DA_VERSION="v0.1.1"' "$script"
+          grep -Fq 'DA_COMMIT="80c0fa06b8fac71332f0a2fdd5c409e666d91955"' "$script"
+          grep -Fq 'DA_MANIFEST_SHA256="5fc66e50b542d0d9c2cf4ffb704f201b1ba58ce91fd5cb005684cae84535495d"' "$script"
+          grep -Fq 'DA_INSTALLER_SHA256="14b70c91f6cff93943e4d03dc33bb9c41ab42195e1ab7ff922a0c677f3c8dd2f"' "$script"
+          grep -Fq 'DA_AGENT_SHA256="7fbb723a87cc677721b6fdffd78465f0f31d9b6a83784ac1a5d8d7b58b42c5cf"' "$script"
+          grep -Fq 'DA_SUMS_SHA256="8918b7b016c0fdf58c2c35fe0219d0b0093793dab7d46849efcae9433d8f5309"' "$script"
+
+          grep -Fq 'sha256sum -c SHA256SUMS' "$script"
+          grep -Fq 'EC_INSTALLER_TRUSTED_STAGE="$STAGE"' "$script"
+          grep -Fq 'EC_INSTALLER_SOURCE_ROOT="$SOURCE_ROOT"' "$script"
+          grep -Fq 'EC_NATIVE_AGENT_SHA256="$DA_AGENT_SHA256"' "$script"
+          grep -Fq 'EC_RELEASE_TAG=runtime-main' "$script"
+          grep -Fq '"$ARTIFACT_FENCE_AUDITOR"' "$script"
+          grep -Fq '"$AGENT" health' "$script"
+          ! grep -Eiq 'deployment-attestation/(latest|releases/latest)' "$script"
       - name: Validate runtime release workflow YAML
         shell: bash
         run: |
