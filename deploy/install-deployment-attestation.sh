@@ -14,13 +14,13 @@ set -Eeuo pipefail
 # Do not replace the pinned release, source commit, or SHA-256 values without a
 # reviewed repository change.
 
-DA_VERSION="v0.1.2"
-DA_COMMIT="58b99c981172077c8bf87f8bce9be4abd5453fc6"
+DA_VERSION="v0.1.3"
+DA_COMMIT="248f4bd29ad629340e32489e30be8cafc9ffc50d"
 
-DA_MANIFEST_SHA256="b578ba03aac749467c5f6923829d754be97ca44c1b34836b830aed6b9d229d53"
-DA_INSTALLER_SHA256="6fec54f2115a5906f234ac9e90c1d396ea48d00175a12bf5fb9a8c823ccb2308"
-DA_AGENT_SHA256="29eed044bdaf174877f4999699797f3aa5b576bcb957c3917a85ded66f3990c6"
-DA_SUMS_SHA256="ed7f89c3ab4343de61881c28ef637b29b105e996a5109d58d7b0785d849e7266"
+DA_MANIFEST_SHA256="4257d5649b6c8fa303f1e48ab5b657a0b41a9e45ab925c0ae0ddc04d92e2b517"
+DA_INSTALLER_SHA256="55bc551da0c1e7943f9e136688de2ec08276f88abf219175120f59c4de9fddd0"
+DA_AGENT_SHA256="08b2e19cecc3225c7376a4248bcad4311e26a5df971b36fc77580371c223d444"
+DA_SUMS_SHA256="7ee0b59d787f456feda0a295e48c89427573f5e76ad0e6a8a5a8261e33310c76"
 
 DA_REPOSITORY="Exergism-Commons/deployment-attestation"
 DA_BASE_URL="https://github.com/${DA_REPOSITORY}/releases/download/${DA_VERSION}"
@@ -38,9 +38,46 @@ SMOKE="/usr/local/libexec/id.exergism.org-smoke.sh"
 ARTIFACT_FENCE_AUDITOR="/usr/local/libexec/ec-id-production-artifact-fence"
 ATTESTATION_DOC_DIR="/usr/local/share/doc/ec-deployment-attestation"
 TRUSTED_STAGE_PARENT="/var/lib/ec-deployment-attestation/bootstrap"
+INSTALL_STATE_ROOT="/var/lib/ec-deployment-attestation/install"
 
 log()  { printf '\n\033[1;34m==>\033[0m %s\n' "$*"; }
 die()  { printf '\n\033[1;31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
+
+path_exists_any() {
+  [[ -e "$1" || -L "$1" ]]
+}
+
+ACTIONABLE_INSTALL_PHASE=""
+detect_actionable_install_journal() {
+  local phase path count=0 owner mode
+  ACTIONABLE_INSTALL_PHASE=""
+
+  path_exists_any "$INSTALL_STATE_ROOT" || return 1
+  [[ -d "$INSTALL_STATE_ROOT" && ! -L "$INSTALL_STATE_ROOT" ]] \
+    || die "Deployment-attestation install state root is not a real directory: $INSTALL_STATE_ROOT"
+  owner="$(stat -c '%u' -- "$INSTALL_STATE_ROOT")" || die "Could not inspect install state owner."
+  mode="$(stat -c '%a' -- "$INSTALL_STATE_ROOT")" || die "Could not inspect install state mode."
+  [[ "$owner" == 0 && "$mode" == 700 ]] \
+    || die "Deployment-attestation install state root must be root-owned mode 0700."
+
+  for phase in pending validated recovering recovered; do
+    path="$INSTALL_STATE_ROOT/${SERVICE}.$phase"
+    if path_exists_any "$path"; then
+      [[ -d "$path" && ! -L "$path" ]] \
+        || die "Actionable install journal is not a real directory: $path"
+      owner="$(stat -c '%u' -- "$path")" || die "Could not inspect install journal owner: $path"
+      mode="$(stat -c '%a' -- "$path")" || die "Could not inspect install journal mode: $path"
+      [[ "$owner" == 0 && "$mode" == 700 ]] \
+        || die "Actionable install journal must be root-owned mode 0700: $path"
+      ACTIONABLE_INSTALL_PHASE="$phase"
+      count=$((count + 1))
+    fi
+  done
+
+  (( count <= 1 )) \
+    || die "Multiple actionable deployment-attestation install journals exist; refusing ambiguous recovery."
+  (( count == 1 ))
+}
 
 WORKDIR=""
 STAGE=""
@@ -80,11 +117,16 @@ log "Checking existing id.exergism.org production baseline"
 systemctl cat "$TARGET_UNIT" >/dev/null || die "$TARGET_UNIT is not installed; run the base Droplet bootstrap first."
 [[ -d "$APP_DIR" && ! -L "$APP_DIR" ]] || die "$APP_DIR is missing or not a real directory."
 [[ -x "$APP_BIN" && ! -L "$APP_BIN" ]] || die "$APP_BIN is missing, non-executable, or a symlink."
-systemctl is-active --quiet "$TARGET_UNIT" || die "$TARGET_UNIT is not active before handoff."
-curl -q -fsS --max-time 15 http://127.0.0.1:8080/ >/dev/null \
-  || die "Local resolver baseline is unhealthy."
-curl -q -fsS --max-time 15 https://id.exergism.org/ >/dev/null \
-  || die "Public resolver baseline is unhealthy."
+
+if detect_actionable_install_journal; then
+  log "Detected interrupted deployment-attestation transaction (${ACTIONABLE_INSTALL_PHASE}); deferring runtime health checks until trusted recovery"
+else
+  systemctl is-active --quiet "$TARGET_UNIT" || die "$TARGET_UNIT is not active before handoff."
+  curl -q -fsS --max-time 15 http://127.0.0.1:8080/ >/dev/null \
+    || die "Local resolver baseline is unhealthy."
+  curl -q -fsS --max-time 15 https://id.exergism.org/ >/dev/null \
+    || die "Public resolver baseline is unhealthy."
+fi
 
 WORKDIR="$(mktemp -d /var/tmp/id-deployment-attestation.XXXXXX)"
 chmod 0700 "$WORKDIR"
