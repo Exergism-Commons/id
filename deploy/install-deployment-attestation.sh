@@ -182,7 +182,7 @@ env_mode=$((8#$env_mode_raw))
 (( (env_mode & 0037) == 0 )) \
   || die "$ENV_FILE permissions are too broad: mode=$env_mode_raw (group-write/execute and all other access are forbidden)."
 
-required_config=
+required_config=(
   "EC_SERVICE=id.exergism.org"
   "EC_REPOSITORY=Exergism-Commons/id"
   "EC_ENVIRONMENT=production"
