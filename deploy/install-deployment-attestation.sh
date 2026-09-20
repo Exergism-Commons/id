@@ -177,8 +177,12 @@ STAGE=""
 log "Validating installed production configuration"
 [[ -f "$ENV_FILE" && ! -L "$ENV_FILE" ]] || die "Installed environment file is missing or unsafe: $ENV_FILE"
 [[ "$(stat -c '%u' -- "$ENV_FILE")" == "0" ]] || die "$ENV_FILE is not root-owned."
+env_mode_raw="$(stat -c '%a' -- "$ENV_FILE")"
+env_mode=$((8#$env_mode_raw))
+(( (env_mode & 0037) == 0 )) \
+  || die "$ENV_FILE permissions are too broad: mode=$env_mode_raw (group-write/execute and all other access are forbidden)."
 
-required_config=(
+required_config=
   "EC_SERVICE=id.exergism.org"
   "EC_REPOSITORY=Exergism-Commons/id"
   "EC_ENVIRONMENT=production"
