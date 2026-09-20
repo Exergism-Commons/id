@@ -38,9 +38,46 @@ SMOKE="/usr/local/libexec/id.exergism.org-smoke.sh"
 ARTIFACT_FENCE_AUDITOR="/usr/local/libexec/ec-id-production-artifact-fence"
 ATTESTATION_DOC_DIR="/usr/local/share/doc/ec-deployment-attestation"
 TRUSTED_STAGE_PARENT="/var/lib/ec-deployment-attestation/bootstrap"
+INSTALL_STATE_ROOT="/var/lib/ec-deployment-attestation/install"
 
 log()  { printf '\n\033[1;34m==>\033[0m %s\n' "$*"; }
 die()  { printf '\n\033[1;31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
+
+path_exists_any() {
+  [[ -e "$1" || -L "$1" ]]
+}
+
+ACTIONABLE_INSTALL_PHASE=""
+detect_actionable_install_journal() {
+  local phase path count=0 owner mode
+  ACTIONABLE_INSTALL_PHASE=""
+
+  path_exists_any "$INSTALL_STATE_ROOT" || return 1
+  [[ -d "$INSTALL_STATE_ROOT" && ! -L "$INSTALL_STATE_ROOT" ]] \
+    || die "Deployment-attestation install state root is not a real directory: $INSTALL_STATE_ROOT"
+  owner="$(stat -c '%u' -- "$INSTALL_STATE_ROOT")" || die "Could not inspect install state owner."
+  mode="$(stat -c '%a' -- "$INSTALL_STATE_ROOT")" || die "Could not inspect install state mode."
+  [[ "$owner" == 0 && "$mode" == 700 ]] \
+    || die "Deployment-attestation install state root must be root-owned mode 0700."
+
+  for phase in pending validated recovering recovered; do
+    path="$INSTALL_STATE_ROOT/${SERVICE}.$phase"
+    if path_exists_any "$path"; then
+      [[ -d "$path" && ! -L "$path" ]] \
+        || die "Actionable install journal is not a real directory: $path"
+      owner="$(stat -c '%u' -- "$path")" || die "Could not inspect install journal owner: $path"
+      mode="$(stat -c '%a' -- "$path")" || die "Could not inspect install journal mode: $path"
+      [[ "$owner" == 0 && "$mode" == 700 ]] \
+        || die "Actionable install journal must be root-owned mode 0700: $path"
+      ACTIONABLE_INSTALL_PHASE="$phase"
+      count=$((count + 1))
+    fi
+  done
+
+  (( count <= 1 )) \
+    || die "Multiple actionable deployment-attestation install journals exist; refusing ambiguous recovery."
+  (( count == 1 ))
+}
 
 WORKDIR=""
 STAGE=""
@@ -80,11 +117,16 @@ log "Checking existing id.exergism.org production baseline"
 systemctl cat "$TARGET_UNIT" >/dev/null || die "$TARGET_UNIT is not installed; run the base Droplet bootstrap first."
 [[ -d "$APP_DIR" && ! -L "$APP_DIR" ]] || die "$APP_DIR is missing or not a real directory."
 [[ -x "$APP_BIN" && ! -L "$APP_BIN" ]] || die "$APP_BIN is missing, non-executable, or a symlink."
-systemctl is-active --quiet "$TARGET_UNIT" || die "$TARGET_UNIT is not active before handoff."
-curl -q -fsS --max-time 15 http://127.0.0.1:8080/ >/dev/null \
-  || die "Local resolver baseline is unhealthy."
-curl -q -fsS --max-time 15 https://id.exergism.org/ >/dev/null \
-  || die "Public resolver baseline is unhealthy."
+
+if detect_actionable_install_journal; then
+  log "Detected interrupted deployment-attestation transaction (${ACTIONABLE_INSTALL_PHASE}); deferring runtime health checks until trusted recovery"
+else
+  systemctl is-active --quiet "$TARGET_UNIT" || die "$TARGET_UNIT is not active before handoff."
+  curl -q -fsS --max-time 15 http://127.0.0.1:8080/ >/dev/null \
+    || die "Local resolver baseline is unhealthy."
+  curl -q -fsS --max-time 15 https://id.exergism.org/ >/dev/null \
+    || die "Public resolver baseline is unhealthy."
+fi
 
 WORKDIR="$(mktemp -d /var/tmp/id-deployment-attestation.XXXXXX)"
 chmod 0700 "$WORKDIR"
