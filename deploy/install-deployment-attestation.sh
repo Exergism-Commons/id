@@ -14,13 +14,13 @@ set -Eeuo pipefail
 # Do not replace the pinned release, source commit, or SHA-256 values without a
 # reviewed repository change.
 
-DA_VERSION="v0.1.1"
-DA_COMMIT="80c0fa06b8fac71332f0a2fdd5c409e666d91955"
+DA_VERSION="v0.1.2"
+DA_COMMIT="58b99c981172077c8bf87f8bce9be4abd5453fc6"
 
-DA_MANIFEST_SHA256="5fc66e50b542d0d9c2cf4ffb704f201b1ba58ce91fd5cb005684cae84535495d"
-DA_INSTALLER_SHA256="14b70c91f6cff93943e4d03dc33bb9c41ab42195e1ab7ff922a0c677f3c8dd2f"
-DA_AGENT_SHA256="7fbb723a87cc677721b6fdffd78465f0f31d9b6a83784ac1a5d8d7b58b42c5cf"
-DA_SUMS_SHA256="8918b7b016c0fdf58c2c35fe0219d0b0093793dab7d46849efcae9433d8f5309"
+DA_MANIFEST_SHA256="b578ba03aac749467c5f6923829d754be97ca44c1b34836b830aed6b9d229d53"
+DA_INSTALLER_SHA256="6fec54f2115a5906f234ac9e90c1d396ea48d00175a12bf5fb9a8c823ccb2308"
+DA_AGENT_SHA256="29eed044bdaf174877f4999699797f3aa5b576bcb957c3917a85ded66f3990c6"
+DA_SUMS_SHA256="ed7f89c3ab4343de61881c28ef637b29b105e996a5109d58d7b0785d849e7266"
 
 DA_REPOSITORY="Exergism-Commons/deployment-attestation"
 DA_BASE_URL="https://github.com/${DA_REPOSITORY}/releases/download/${DA_VERSION}"
@@ -37,6 +37,7 @@ AGENT="/usr/local/libexec/ec-deployment-agent"
 SMOKE="/usr/local/libexec/id.exergism.org-smoke.sh"
 ARTIFACT_FENCE_AUDITOR="/usr/local/libexec/ec-id-production-artifact-fence"
 ATTESTATION_DOC_DIR="/usr/local/share/doc/ec-deployment-attestation"
+TRUSTED_STAGE_PARENT="/var/lib/ec-deployment-attestation/bootstrap"
 
 log()  { printf '\n\033[1;34m==>\033[0m %s\n' "$*"; }
 die()  { printf '\n\033[1;31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
@@ -151,10 +152,25 @@ SOURCE_COMMIT="$(git -C "$SOURCE_ROOT" rev-parse HEAD)"
 [[ "$SOURCE_COMMIT" == "$DA_COMMIT" ]] \
   || die "Reviewed tag resolved to $SOURCE_COMMIT, expected $DA_COMMIT."
 
-log "Creating root-owned trusted installer stage"
-STAGE="$(mktemp -d /run/ec-deployment-attestation-installer.XXXXXX)"
+log "Creating root-owned trusted executable installer stage"
+install -d -o root -g root -m 0700 /var/lib/ec-deployment-attestation
+install -d -o root -g root -m 0700 "$TRUSTED_STAGE_PARENT"
+
+[[ -d "$TRUSTED_STAGE_PARENT" && ! -L "$TRUSTED_STAGE_PARENT" ]] \
+  || die "Trusted installer stage parent is missing or unsafe: $TRUSTED_STAGE_PARENT"
+[[ "$(stat -c '%u:%a' -- "$TRUSTED_STAGE_PARENT")" == "0:700" ]] \
+  || die "Trusted installer stage parent must be root-owned mode 0700."
+
+STAGE="$(mktemp -d "$TRUSTED_STAGE_PARENT/installer.XXXXXX")"
 chmod 0700 "$STAGE"
 chown root:root "$STAGE"
+
+stage_mount_options="$(findmnt -n -o OPTIONS -T "$STAGE")" \
+  || die "Could not determine trusted installer stage mount options."
+case ",$stage_mount_options," in
+  *,noexec,*) die "Trusted installer stage filesystem is mounted noexec." ;;
+esac
+
 install -o root -g root -m 0500 \
   "$RELEASE_DIR/install-id-exergism.sh" \
   "$STAGE/install-id-exergism.sh"
