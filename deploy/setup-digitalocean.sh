@@ -4,6 +4,9 @@ set -Eeuo pipefail
 # Exergism Commons — id.exergism.org DigitalOcean Droplet bootstrap
 #
 # Target: fresh Ubuntu/Debian Droplet, run as root.
+# This script is for initial host provisioning. Once deployment-attestation is
+# installed, routine idresolver deployments are owned by that agent; do not
+# re-run this bootstrap as an update mechanism.
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/Exergism-Commons/id/main/deploy/setup-digitalocean.sh | sudo bash
@@ -80,6 +83,8 @@ apt-get install -y --no-install-recommends \
   git \
   gnupg \
   jq \
+  python3 \
+  util-linux \
   ufw
 
 arch="$(dpkg --print-architecture)"
@@ -282,6 +287,7 @@ printf 'Service:   systemctl status %s\n' "$SERVICE_NAME"
 printf 'Logs:      journalctl -u %s -f\n' "$SERVICE_NAME"
 printf 'Caddy:     systemctl status caddy\n'
 printf 'Notices:   %s\n' "$DOC_DIR"
+printf 'Updates:   install deployment-attestation; after handoff, do not re-run this bootstrap for routine releases.\n'
 if [[ -n "$PUBLIC_IP" ]]; then
   printf '\nNext DNS step in Spaceship:\n'
   printf '  A    id    %s    TTL 300\n' "$PUBLIC_IP"

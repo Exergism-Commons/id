@@ -8,13 +8,16 @@ The release workflow publishes:
 
 - `idresolver-linux-amd64`;
 - `idresolver-linux-arm64`;
-- `SHA256SUMS`;
-- `SOURCE_COMMIT`;
+- `DEPLOYMENT_MANIFEST.json` — authoritative source/runtime snapshot;
+- `SHA256SUMS` — compatibility metadata;
+- `SOURCE_COMMIT` — compatibility metadata;
 - `BUILD_INFO`.
 
 Pushes to `main` update the rolling prerelease tag `runtime-main`. Tags matching `v*` produce versioned release assets. For an immutable production deployment, set `RELEASE_TAG` to a version tag. `runtime-main` is convenient while bringing up or testing the service.
 
 ## DigitalOcean Droplet bootstrap
+
+This bootstrap is for **initial host provisioning only**. After the deployment-attestation agent has been installed and validated, routine resolver releases must be applied by that agent rather than by re-running this script.
 
 For a fresh supported Ubuntu or Debian Droplet, run:
 
@@ -25,11 +28,11 @@ curl -fsSL https://raw.githubusercontent.com/Exergism-Commons/id/main/deploy/set
 The bootstrap script:
 
 - updates installed operating-system packages;
-- installs only runtime/administrative dependencies (`curl`, `git`, `ufw`, Caddy and related base packages);
-- downloads the architecture-matched `idresolver` binary from the selected GitHub Release;
-- verifies the binary against the release `SHA256SUMS`;
-- reads `SOURCE_COMMIT` and checks out the repository tag referenced by `RELEASE_TAG`;
-- refuses deployment if the checked-out commit does not match the binary's recorded source commit;
+- installs only runtime/administrative dependencies (`curl`, `git`, `jq`, `python3`, `util-linux`, `ufw`, Caddy and related base packages);
+- captures `DEPLOYMENT_MANIFEST.json` from the selected GitHub Release before downloading the runtime;
+- downloads the architecture-matched `idresolver` binary and verifies its SHA-256 against that captured manifest;
+- checks out the repository tag referenced by `RELEASE_TAG`;
+- refuses deployment if the checked-out commit does not match the manifest's `source_commit`;
 - creates the restricted `idexergism` service account;
 - installs the resolver at `/usr/local/bin/idresolver`;
 - records the deployed release tag, source commit and binary checksum under `/usr/local/share/doc/idresolver`;
@@ -39,6 +42,14 @@ The bootstrap script:
 - runs local HTML and Turtle negotiation smoke tests.
 
 No Go toolchain, local compilation or build-time swap is required on the Droplet. A 512 MB VPS is therefore sufficient for the intended runtime.
+
+## Handoff to deployment-attestation
+
+The resolver release channel is already compatible with `Exergism-Commons/deployment-attestation`: `runtime-main` publishes a `DEPLOYMENT_MANIFEST.json` with repository `Exergism-Commons/id`, the exact source commit, and architecture-keyed runtime SHA-256 values.
+
+After the base resolver/Caddy host exists, install a reviewed deployment-attestation release and use its `id.exergism.org` configuration. The agent then owns routine source/runtime activation, health/smoke validation, rollback/recovery and periodic checks. The production host should not use `deploy/setup-digitalocean.sh` or manual `git pull`/binary replacement for normal updates after this handoff.
+
+The deployment-attestation installer additionally applies the production artifact-fence drop-in for both `/srv/id.exergism.org` and `/usr/local/bin/idresolver`; the service unit in this repository already keeps its source tree read-only inside the resolver's mount namespace.
 
 ### Selecting a release
 
