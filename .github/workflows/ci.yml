@@ -73,7 +73,10 @@ jobs:
           ! grep -Fq '/run/ec-deployment-attestation-installer' "$script"
           grep -Fq 'EC_INSTALLER_SOURCE_ROOT="$SOURCE_ROOT"' "$script"
           grep -Fq 'detect_actionable_install_journal()' "$script"
+          grep -Fq 'detect_actionable_agent_transaction()' "$script"
           grep -Fq 'ACTIONABLE_INSTALL_PHASE=""' "$script"
+          grep -Fq 'AGENT_TRANSACTION_FILE="${AGENT_STATE_ROOT}/transaction.json"' "$script"
+          grep -Fq 'Detected active deployment-agent transaction; deferring runtime health checks until trusted recovery' "$script"
           grep -Fq 'deferring runtime health checks until trusted recovery' "$script"
           grep -Fq 'EC_NATIVE_AGENT_SHA256="$DA_AGENT_SHA256"' "$script"
           grep -Fq 'EC_RELEASE_TAG=runtime-main' "$script"
@@ -101,6 +104,7 @@ jobs:
 
           sed -n '/^path_exists_any() {/,/^}$/p' "$script" > "$helper"
           sed -n '/^detect_actionable_install_journal() {/,/^}$/p' "$script" >> "$helper"
+          sed -n '/^detect_actionable_agent_transaction() {/,/^}$/p' "$script" >> "$helper"
           # shellcheck disable=SC1090
           source "$helper"
 
@@ -133,6 +137,43 @@ jobs:
           chmod 0755 "$INSTALL_STATE_ROOT/$SERVICE.recovering"
           if (detect_actionable_install_journal); then
             echo "Unsafe actionable journal permissions were incorrectly accepted." >&2
+            exit 1
+          fi
+
+          AGENT_STATE_ROOT="$state_root/agent"
+          AGENT_TRANSACTION_FILE="$AGENT_STATE_ROOT/transaction.json"
+          install -d -o root -g root -m 0700 "$AGENT_STATE_ROOT"
+
+          if detect_actionable_agent_transaction; then
+            echo "Missing deployment-agent transaction was incorrectly accepted." >&2
+            exit 1
+          fi
+
+          cat > "$AGENT_TRANSACTION_FILE" <<'JSON'
+          {
+            "schema_version": "0.1",
+            "phase": "activating",
+            "old_source_commit": "1111111111111111111111111111111111111111",
+            "new_source_commit": "2222222222222222222222222222222222222222",
+            "old_binary_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "new_binary_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "backup_binary": "/var/lib/ec-deployment-attestation/id.exergism.org/backups/runtime-old"
+          }
+JSON
+          chown root:root "$AGENT_TRANSACTION_FILE"
+          chmod 0600 "$AGENT_TRANSACTION_FILE"
+          detect_actionable_agent_transaction
+
+          chmod 0644 "$AGENT_TRANSACTION_FILE"
+          if (detect_actionable_agent_transaction); then
+            echo "Over-broad deployment-agent transaction permissions were incorrectly accepted." >&2
+            exit 1
+          fi
+
+          chmod 0600 "$AGENT_TRANSACTION_FILE"
+          printf '%s\n' '{"schema_version":"0.1","phase":"bogus"}' > "$AGENT_TRANSACTION_FILE"
+          if (detect_actionable_agent_transaction); then
+            echo "Malformed deployment-agent transaction was incorrectly accepted." >&2
             exit 1
           fi
           SH
