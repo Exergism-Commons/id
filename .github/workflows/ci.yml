@@ -59,12 +59,12 @@ jobs:
           set -euo pipefail
           script=deploy/install-deployment-attestation.sh
 
-          grep -Fq 'DA_VERSION="v0.1.4"' "$script"
-          grep -Fq 'DA_COMMIT="7f027c26cc515d151775544f4cba51a8df19a2c6"' "$script"
-          grep -Fq 'DA_MANIFEST_SHA256="c89fb839dddca4b305ea0aec3dd6a3e8a05be5a4d1c0464d0beaceccc21d215e"' "$script"
-          grep -Fq 'DA_INSTALLER_SHA256="8cc1f89b7dc9a3f4547fe3ce30593cd059227acaee1bf2f90733ad277f1f70b3"' "$script"
-          grep -Fq 'DA_AGENT_SHA256="6ca433271fec97750907f594b402f952892aaf04d83737c3fa7152ec3716ab98"' "$script"
-          grep -Fq 'DA_SUMS_SHA256="e361fe987d85bf60aa8dca115c8d2fedaaad43d50e869dce31eca08735147cc0"' "$script"
+          grep -Fq 'DA_VERSION="v0.1.5"' "$script"
+          grep -Fq 'DA_COMMIT="24134ad3549ce6814bc1c828e2916cc87773b0d1"' "$script"
+          grep -Fq 'DA_MANIFEST_SHA256="a7b74f453ee546807d4893411227d502b4e59fb0d7de9df0e0a06b87dc0e6aef"' "$script"
+          grep -Fq 'DA_INSTALLER_SHA256="7f9a89aca7187f2bc4c789a84a596f6b1b8665d03367d0c1b5ae42b2f51ef2bc"' "$script"
+          grep -Fq 'DA_AGENT_SHA256="5cb96a54f329b14f9fb4d7410365c0d45246f9925cdca694c6e4893aafd6aeec"' "$script"
+          grep -Fq 'DA_SUMS_SHA256="f45b42ac6f8f7b2405855a275462c1c3a1246b2344115da1e1e65cc66aee3bd8"' "$script"
 
           grep -Fq 'sha256sum -c SHA256SUMS' "$script"
           grep -Fq 'EC_INSTALLER_TRUSTED_STAGE="$STAGE"' "$script"
