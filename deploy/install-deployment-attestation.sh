@@ -39,6 +39,8 @@ ARTIFACT_FENCE_AUDITOR="/usr/local/libexec/ec-id-production-artifact-fence"
 ATTESTATION_DOC_DIR="/usr/local/share/doc/ec-deployment-attestation"
 TRUSTED_STAGE_PARENT="/var/lib/ec-deployment-attestation/bootstrap"
 INSTALL_STATE_ROOT="/var/lib/ec-deployment-attestation/install"
+AGENT_STATE_ROOT="/var/lib/ec-deployment-attestation/${SERVICE}"
+AGENT_TRANSACTION_FILE="${AGENT_STATE_ROOT}/transaction.json"
 
 log()  { printf '\n\033[1;34m==>\033[0m %s\n' "$*"; }
 die()  { printf '\n\033[1;31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
@@ -77,6 +79,44 @@ detect_actionable_install_journal() {
   (( count <= 1 )) \
     || die "Multiple actionable deployment-attestation install journals exist; refusing ambiguous recovery."
   (( count == 1 ))
+}
+
+detect_actionable_agent_transaction() {
+  local owner mode
+
+  path_exists_any "$AGENT_TRANSACTION_FILE" || return 1
+  [[ -d "$AGENT_STATE_ROOT" && ! -L "$AGENT_STATE_ROOT" ]] \
+    || die "Deployment-agent state root is not a real directory: $AGENT_STATE_ROOT"
+  owner="$(stat -c '%u' -- "$AGENT_STATE_ROOT")" \
+    || die "Could not inspect deployment-agent state root owner."
+  mode="$(stat -c '%a' -- "$AGENT_STATE_ROOT")" \
+    || die "Could not inspect deployment-agent state root mode."
+  [[ "$owner" == 0 && "$mode" == 700 ]] \
+    || die "Deployment-agent state root must be root-owned mode 0700."
+
+  [[ -f "$AGENT_TRANSACTION_FILE" && ! -L "$AGENT_TRANSACTION_FILE" ]] \
+    || die "Deployment-agent transaction is not a regular file: $AGENT_TRANSACTION_FILE"
+  owner="$(stat -c '%u' -- "$AGENT_TRANSACTION_FILE")" \
+    || die "Could not inspect deployment-agent transaction owner."
+  mode="$(stat -c '%a' -- "$AGENT_TRANSACTION_FILE")" \
+    || die "Could not inspect deployment-agent transaction mode."
+  [[ "$owner" == 0 ]] \
+    || die "Deployment-agent transaction must be root-owned."
+  (( (8#$mode & 0077) == 0 )) \
+    || die "Deployment-agent transaction permissions are too broad: mode=$mode"
+
+  jq -e '
+    .schema_version == "0.1"
+    and (.phase == "activating" or .phase == "committed")
+    and (.old_source_commit | type == "string" and test("^[0-9a-f]{40}$"))
+    and (.new_source_commit | type == "string" and test("^[0-9a-f]{40}$"))
+    and (.old_binary_sha256 | type == "string" and test("^[0-9a-f]{64}$"))
+    and (.new_binary_sha256 | type == "string" and test("^[0-9a-f]{64}$"))
+    and (.backup_binary | type == "string" and startswith("/var/lib/ec-deployment-attestation/"))
+  ' "$AGENT_TRANSACTION_FILE" >/dev/null \
+    || die "Deployment-agent transaction is malformed; refusing recovery admission."
+
+  return 0
 }
 
 WORKDIR=""
@@ -119,7 +159,9 @@ systemctl cat "$TARGET_UNIT" >/dev/null || die "$TARGET_UNIT is not installed; r
 [[ -x "$APP_BIN" && ! -L "$APP_BIN" ]] || die "$APP_BIN is missing, non-executable, or a symlink."
 
 if detect_actionable_install_journal; then
-  log "Detected interrupted deployment-attestation transaction (${ACTIONABLE_INSTALL_PHASE}); deferring runtime health checks until trusted recovery"
+  log "Detected interrupted deployment-attestation installer transaction (${ACTIONABLE_INSTALL_PHASE}); deferring runtime health checks until trusted recovery"
+elif detect_actionable_agent_transaction; then
+  log "Detected active deployment-agent transaction; deferring runtime health checks until trusted recovery"
 else
   systemctl is-active --quiet "$TARGET_UNIT" || die "$TARGET_UNIT is not active before handoff."
   curl -q -fsS --max-time 15 http://127.0.0.1:8080/ >/dev/null \
