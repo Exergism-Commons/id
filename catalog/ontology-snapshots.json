@@ -52,6 +52,20 @@
       "publication_transform": "none"
     },
     {
+      "id": "funding-0.1.0-draft",
+      "source_repository": "Exergism-Commons/funding",
+      "source_commit": "d9d8e79e70b441f3172082868c042c6993dd4d2a",
+      "ontology_iri": "https://id.exergism.org/ontology/funding",
+      "version_iri": "https://id.exergism.org/ontology/funding/0.1.0-draft",
+      "owner_declares_version_iri": false,
+      "ontology_version": "0.1.0-draft",
+      "source_path": "ontology/funding.owl.ttl",
+      "source_git_blob_sha": "9bd7b5da178f9215270c1e31cdec7eb88c5b36aa",
+      "versioned_publication_path": "representations/snapshots/funding-0.1.0-draft.ttl",
+      "publication_git_blob_sha": "9bd7b5da178f9215270c1e31cdec7eb88c5b36aa",
+      "publication_transform": "none"
+    },
+    {
       "id": "funding-context-0.1.0-draft",
       "source_repository": "Exergism-Commons/funding",
       "source_commit": "00a11736330d3d8d8f8a492497f470a66e667cdb",

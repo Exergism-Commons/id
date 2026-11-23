@@ -24,6 +24,7 @@ type ontologySnapshotCatalog struct {
         SourceRepository               string `json:"source_repository"`
         SourceCommit                   string `json:"source_commit"`
         VersionIRI                     string `json:"version_iri"`
+        OwnerDeclaresVersionIRI        *bool  `json:"owner_declares_version_iri"`
         ProfileIRI                     string `json:"profile_iri"`
         ContextIRI                     string `json:"context_iri"`
         SourcePath                     string `json:"source_path"`
@@ -41,6 +42,12 @@ type ontologySnapshotCatalog struct {
 var pinnedOwnerSourceCommits = map[string]string{
     "Exergism-Commons/governance": "517c0df4c905c79ec2b2824231b40ccaa6a1b510",
     "Exergism-Commons/funding":    "00a11736330d3d8d8f8a492497f470a66e667cdb",
+}
+
+// Historical ontology versions keep the exact bytes of an older owner commit,
+// which CI verifies against that commit instead of the current pin.
+var historicalSnapshotSourceCommits = map[string]string{
+    "funding-0.1.0-draft": "d9d8e79e70b441f3172082868c042c6993dd4d2a",
 }
 
 func TestOwnerPublicationBytesMatchManifestWithoutTransformation(t *testing.T) {
@@ -72,6 +79,7 @@ func TestOwnerPublicationBytesMatchManifestWithoutTransformation(t *testing.T) {
         "commons-0.1-PRE2":               "Exergism-Commons/governance",
         "governance-0.1-PRE2":            "Exergism-Commons/governance",
         "governance-authority-0.1-DRAFT": "Exergism-Commons/governance",
+        "funding-0.1.0-draft":            "Exergism-Commons/funding",
         "funding-0.2.0-pre1":             "Exergism-Commons/funding",
         "funding-context-0.1.0-draft":    "Exergism-Commons/funding",
         "funding-context-0.2.0-pre1":     "Exergism-Commons/funding",
@@ -93,8 +101,15 @@ func TestOwnerPublicationBytesMatchManifestWithoutTransformation(t *testing.T) {
             t.Fatalf("unexpected snapshot %s from %q", snapshot.ID, repository)
         }
         delete(expected, snapshot.ID)
-        if commit != pinnedOwnerSourceCommits[owner] {
-            t.Fatalf("snapshot %s source commit %q is not the pinned %s commit", snapshot.ID, commit, owner)
+        want := pinnedOwnerSourceCommits[owner]
+        if historicalCommit, ok := historicalSnapshotSourceCommits[snapshot.ID]; ok {
+            want = historicalCommit
+            if snapshot.VersionIRI == "" || snapshot.CurrentPublicationPath != "" || snapshot.HistoricalAliasPublicationPath != "" {
+                t.Fatalf("historical snapshot %s must be a versioned ontology publication only", snapshot.ID)
+            }
+        }
+        if commit != want {
+            t.Fatalf("snapshot %s source commit %q is not the expected %s commit %q", snapshot.ID, commit, owner, want)
         }
         if snapshot.PublicationTransform != "none" {
             t.Fatalf("id must not transform semantic source bytes for %s", snapshot.ID)
@@ -108,6 +123,15 @@ func TestOwnerPublicationBytesMatchManifestWithoutTransformation(t *testing.T) {
         }
         if got := gitBlobSHA(data); got != snapshot.PublicationGitBlobSHA {
             t.Fatalf("versioned publication %s drifted: got %s want %s", snapshot.ID, got, snapshot.PublicationGitBlobSHA)
+        }
+        if snapshot.VersionIRI != "" {
+            if snapshot.OwnerDeclaresVersionIRI == nil || *snapshot.OwnerDeclaresVersionIRI {
+                if strings.Count(string(data), "owl:versionIRI <"+snapshot.VersionIRI+">") != 1 {
+                    t.Fatalf("snapshot %s must declare its version IRI %s exactly once", snapshot.ID, snapshot.VersionIRI)
+                }
+            } else if strings.Contains(string(data), "owl:versionIRI") {
+                t.Fatalf("snapshot %s is recorded as predating owl:versionIRI but declares one", snapshot.ID)
+            }
         }
         for _, path := range []string{snapshot.CurrentPublicationPath, snapshot.HistoricalAliasPublicationPath} {
             if path == "" {

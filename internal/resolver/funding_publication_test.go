@@ -12,6 +12,7 @@ import (
 
 const (
 	fundingVersionIRI       = "https://id.exergism.org/ontology/funding/0.2.0-pre1"
+	fundingLegacyVersionIRI = "https://id.exergism.org/ontology/funding/0.1.0-draft"
 	fundingLegacyContextIRI = "https://id.exergism.org/context/funding/0.1.0-draft"
 	fundingCurrentContext   = "https://id.exergism.org/context/funding/0.2.0-pre1"
 	fundingContextAlias     = "https://id.exergism.org/representations/funding-context.jsonld"
@@ -73,6 +74,7 @@ func TestFundingImmutableRoutesServeExactPublicationBytes(t *testing.T) {
 		file      string
 	}{
 		{fundingVersionIRI, "text/turtle; charset=utf-8", "text/turtle", "representations/snapshots/funding-0.2.0-pre1.ttl"},
+		{fundingLegacyVersionIRI, "text/turtle; charset=utf-8", "text/turtle", "representations/snapshots/funding-0.1.0-draft.ttl"},
 		{fundingLegacyContextIRI, "application/ld+json", "application/ld+json, application/json;q=0.9", "representations/contexts/funding-context-0.1.0-draft.jsonld"},
 		{fundingCurrentContext, "application/ld+json", "application/ld+json, application/json;q=0.9", "representations/contexts/funding-context-0.2.0-pre1.jsonld"},
 		{fundingContextAlias, "application/ld+json; charset=utf-8", "application/ld+json", "representations/funding-context.jsonld"},
@@ -232,5 +234,87 @@ func TestFundingOntologyVersionClosureIsOwnerAuthored(t *testing.T) {
 		if strings.Contains(text, mutable) {
 			t.Fatalf("Funding versioned artifact must not reference mutable current IRI %s", mutable)
 		}
+	}
+}
+
+// expandLegacyTerm resolves a JSON-LD term definition against its own context's prefixes.
+func expandLegacyTerm(context map[string]any, definition any) string {
+	id, _ := definition.(string)
+	if object, ok := definition.(map[string]any); ok {
+		id, _ = object["@id"].(string)
+	}
+	prefix, local, found := strings.Cut(id, ":")
+	if !found {
+		return id
+	}
+	switch base := context[prefix].(type) {
+	case string:
+		return base + local
+	case map[string]any:
+		if iri, ok := base["@id"].(string); ok {
+			return iri + local
+		}
+	}
+	return id
+}
+
+func TestFundingLegacyOntologyDeclaresTheFrozenRecordTerms(t *testing.T) {
+	ontology, err := os.ReadFile("../../representations/snapshots/funding-0.1.0-draft.ttl")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(ontology)
+	if strings.Count(text, `owl:versionInfo "0.1.0-draft"`) != 1 {
+		t.Fatal("the historical Funding snapshot must be the 0.1.0-draft ontology")
+	}
+	if strings.Contains(text, "owl:versionIRI") {
+		t.Fatal("the 0.1.0-draft owner bytes predate owl:versionIRI and must be served unchanged")
+	}
+
+	var contextDoc struct {
+		Context map[string]any `json:"@context"`
+	}
+	raw, err := os.ReadFile("../../representations/contexts/funding-context-0.1.0-draft.jsonld")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(raw, &contextDoc); err != nil {
+		t.Fatal(err)
+	}
+	var record map[string]any
+	raw, err = os.ReadFile("../../representations/funding-records/ECF-DEC-MRG-BOOTSTRAP-001.jsonld")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(raw, &record); err != nil {
+		t.Fatal(err)
+	}
+	if record["@context"] != fundingLegacyContextIRI {
+		t.Fatalf("%s must keep the 0.1.0-draft context", fundingFrozenRecordIRI)
+	}
+
+	used := []string{}
+	for key, value := range record {
+		switch key {
+		case "@context", "@id":
+			continue
+		case "@type":
+			used = append(used, expandLegacyTerm(contextDoc.Context, contextDoc.Context[value.(string)]))
+		default:
+			used = append(used, expandLegacyTerm(contextDoc.Context, contextDoc.Context[key]))
+		}
+	}
+	const namespace = "https://id.exergism.org/funding#"
+	for _, iri := range used {
+		name, ok := strings.CutPrefix(iri, namespace)
+		if !ok {
+			t.Fatalf("%s uses %q, which the 0.1.0-draft context does not map into funding#", fundingFrozenRecordIRI, iri)
+		}
+		if !strings.Contains(text, "\necf:"+name+" a ") {
+			t.Fatalf("funding#%s used by %s is not declared by the 0.1.0-draft snapshot", name, fundingFrozenRecordIRI)
+		}
+	}
+	if len(used) == 0 {
+		t.Fatal("no terms checked")
 	}
 }
