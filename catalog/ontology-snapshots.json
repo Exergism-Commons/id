@@ -36,6 +36,45 @@
       "versioned_publication_path": "representations/governance/downstream-authority-0.1-DRAFT.json",
       "publication_git_blob_sha": "edbe0a536be30f8a54c7a17bb575a319b7e55d7d",
       "publication_transform": "none"
+    },
+    {
+      "id": "funding-0.2.0-pre1",
+      "source_repository": "Exergism-Commons/funding",
+      "source_commit": "00a11736330d3d8d8f8a492497f470a66e667cdb",
+      "ontology_iri": "https://id.exergism.org/ontology/funding",
+      "version_iri": "https://id.exergism.org/ontology/funding/0.2.0-pre1",
+      "ontology_version": "0.2.0-pre1",
+      "source_path": "ontology/funding.owl.ttl",
+      "source_git_blob_sha": "3bd061c523344671f4bcbe30d38b3d11a99bf899",
+      "current_publication_path": "representations/funding.owl.ttl",
+      "versioned_publication_path": "representations/snapshots/funding-0.2.0-pre1.ttl",
+      "publication_git_blob_sha": "3bd061c523344671f4bcbe30d38b3d11a99bf899",
+      "publication_transform": "none"
+    },
+    {
+      "id": "funding-context-0.1.0-draft",
+      "source_repository": "Exergism-Commons/funding",
+      "source_commit": "00a11736330d3d8d8f8a492497f470a66e667cdb",
+      "context_iri": "https://id.exergism.org/context/funding/0.1.0-draft",
+      "context_version": "0.1.0-draft",
+      "source_path": "ontology/contexts/funding-context-0.1.0-draft.jsonld",
+      "source_git_blob_sha": "032ed1615a88a1c0ee8f9a5f34f3dee0780a67b1",
+      "historical_alias_publication_path": "representations/funding-context.jsonld",
+      "versioned_publication_path": "representations/contexts/funding-context-0.1.0-draft.jsonld",
+      "publication_git_blob_sha": "032ed1615a88a1c0ee8f9a5f34f3dee0780a67b1",
+      "publication_transform": "none"
+    },
+    {
+      "id": "funding-context-0.2.0-pre1",
+      "source_repository": "Exergism-Commons/funding",
+      "source_commit": "00a11736330d3d8d8f8a492497f470a66e667cdb",
+      "context_iri": "https://id.exergism.org/context/funding/0.2.0-pre1",
+      "context_version": "0.2.0-pre1",
+      "source_path": "ontology/contexts/funding-context-0.2.0-pre1.jsonld",
+      "source_git_blob_sha": "67f368cee42e5d28b7e38581775321143983b7a6",
+      "versioned_publication_path": "representations/contexts/funding-context-0.2.0-pre1.jsonld",
+      "publication_git_blob_sha": "67f368cee42e5d28b7e38581775321143983b7a6",
+      "publication_transform": "none"
     }
   ]
 }

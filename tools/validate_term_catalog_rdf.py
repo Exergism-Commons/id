@@ -20,6 +20,7 @@ NAMESPACES = json.loads((ROOT / "catalog" / "namespaces.json").read_text(encodin
 SOURCE_FILES = {
     "commons": ROOT / "representations" / "commons.ttl",
     "governance": ROOT / "representations" / "governance.ttl",
+    "funding": ROOT / "representations" / "funding.owl.ttl",
 }
 
 DECLARATION_TYPES = {

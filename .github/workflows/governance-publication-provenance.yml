@@ -78,7 +78,13 @@ jobs:
                   "https://id.exergism.org/governance/profile/0.1-DRAFT",
               ),
           }
-          snapshots = {entry["id"]: entry for entry in manifest["snapshots"]}
+          # Entries declaring another source_repository (Funding) are verified by
+          # that owner's provenance check in ci.yml, not against Governance.
+          snapshots = {
+              entry["id"]: entry
+              for entry in manifest["snapshots"]
+              if entry.get("source_repository", manifest["source_repository"]) == manifest["source_repository"]
+          }
           assert set(snapshots) == set(expected), f"snapshot coverage drift: {set(snapshots)}"
 
           upstream = os.environ["UPSTREAM_REPO"]
