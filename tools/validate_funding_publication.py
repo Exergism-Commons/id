@@ -4,8 +4,13 @@
 CI checks out Exergism-Commons/funding at the pinned commit, runs its own
 tools/export_publication.py and passes both directories here. The resolver must
 serve those bytes unchanged: the versioned and current ontology, both immutable
-JSON-LD contexts, the frozen historical context alias and every record. Any other
-machine-readable representation behind a Funding URL fails the check.
+JSON-LD contexts, the frozen historical context alias and every record.
+
+A historical ontology version (an ontology_snapshots entry with its own older
+source_commit) is instead verified against that commit in the same checkout: it
+must be an ancestor of the pin and of origin/main, and the published bytes must
+be the owner blob. Any other machine-readable representation behind a Funding
+URL fails the check.
 """
 
 from __future__ import annotations
@@ -34,6 +39,19 @@ def load(path: Path) -> dict:
 
 def git(source: Path, *args: str) -> bytes:
     return subprocess.check_output(["git", "-C", str(source), *args])
+
+
+def git_blob_sha(data: bytes) -> str:
+    return hashlib.sha1(f"blob {len(data)}\0".encode("ascii") + data).hexdigest()
+
+
+def is_ancestor(source: Path, commit: str, ref: str) -> bool:
+    result = subprocess.run(
+        ["git", "-C", str(source), "merge-base", "--is-ancestor", commit, ref],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    return result.returncode == 0
 
 
 def path_of(iri: str) -> str:
@@ -70,7 +88,7 @@ def media_file(routes: dict[str, dict], path: str, media_prefix: str) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--source", type=Path, required=True, help="Funding checkout at the pinned commit")
+    parser.add_argument("--source", type=Path, required=True, help="Funding checkout at the pinned commit, with full history and origin/main")
     parser.add_argument("--publication", type=Path, required=True, help="output directory of its export_publication.py")
     args = parser.parse_args()
 
@@ -82,6 +100,8 @@ def main() -> None:
     head = git(args.source, "rev-parse", "HEAD").decode("ascii").strip()
     if head != pin:
         raise SystemExit(f"Funding checkout is at {head}, but the publication is pinned to {pin}")
+    if not is_ancestor(args.source, pin, "origin/main"):
+        raise SystemExit(f"pinned Funding commit {pin} is not on Funding origin/main")
 
     namespaces = load(ROOT / "catalog" / "namespaces.json")
     funding = next((entry for entry in namespaces["namespaces"] if entry["id"] == "funding"), None)
@@ -90,13 +110,17 @@ def main() -> None:
     if funding.get("owner_repository") != FUNDING_REPOSITORY or funding.get("source_commit") != pin:
         raise SystemExit("catalog/namespaces.json Funding owner/source commit diverges from the publication pin")
 
+    # Snapshots at the pin belong to the current publication; any other Funding
+    # snapshot must be a verified historical ontology version (checked below).
     snapshots = [
         entry
         for entry in load(ROOT / "catalog" / "ontology-snapshots.json")["snapshots"]
         if entry.get("source_repository") == FUNDING_REPOSITORY
     ]
-    if not snapshots or any(entry.get("source_commit") != pin for entry in snapshots):
-        raise SystemExit("catalog/ontology-snapshots.json Funding entries diverge from the publication pin")
+    current_snapshots = [entry for entry in snapshots if entry.get("source_commit") == pin]
+    historical_snapshots = [entry for entry in snapshots if entry.get("source_commit") != pin]
+    if not current_snapshots:
+        raise SystemExit("catalog/ontology-snapshots.json has no Funding entries at the publication pin")
 
     # The exporter output must be internally consistent and owner-authored.
     exported = args.publication
@@ -158,6 +182,49 @@ def main() -> None:
     if registered_ids != published_ids:
         raise SystemExit(f"registered Funding record routes differ from the publication: {sorted(registered_ids ^ published_ids)}")
 
+    # Every snapshot at the pin must describe exporter output of its own owner source.
+    for entry in current_snapshots:
+        paths = [entry["versioned_publication_path"], entry.get("current_publication_path"), entry.get("historical_alias_publication_path")]
+        for path in filter(None, paths):
+            if path not in expected:
+                raise SystemExit(f"snapshot {entry['id']} declares {path}, which is not exporter output")
+        if exact.get(expected[entry["versioned_publication_path"]], {}).get("source_path") != entry["source_path"]:
+            raise SystemExit(f"snapshot {entry['id']} does not match the exporter artifact for {entry['source_path']}")
+        blob = git(args.source, "rev-parse", f"HEAD:{entry['source_path']}").decode("ascii").strip()
+        if entry["source_git_blob_sha"] != blob or entry["publication_git_blob_sha"] != blob:
+            raise SystemExit(f"snapshot {entry['id']} blob differs from {entry['source_path']} at {pin}")
+
+    # A historical ontology version keeps the exact owner bytes of an older Funding
+    # main commit. It is verified against that commit, not against the exporter.
+    historical: dict[str, str] = {}
+    for entry in historical_snapshots:
+        commit, source_path = entry.get("source_commit", ""), entry["source_path"]
+        version_iri = entry.get("version_iri")
+        if (
+            not version_iri
+            or entry.get("ontology_iri") != publication["ontology_iri"]
+            or any(entry.get(key) for key in ("current_publication_path", "historical_alias_publication_path", "context_iri", "profile_iri"))
+            or entry.get("publication_transform") != "none"
+        ):
+            raise SystemExit(f"historical Funding snapshot {entry['id']} must be an untransformed ontology version only")
+        if version_iri == publication["ontology_version_iri"] or entry.get("ontology_version") == manifest["publication_version"]:
+            raise SystemExit(f"historical Funding snapshot {entry['id']} claims the current version")
+        if not is_ancestor(args.source, commit, "origin/main") or not is_ancestor(args.source, commit, pin):
+            raise SystemExit(f"historical Funding snapshot {entry['id']} source {commit} is not an earlier commit of Funding main")
+        try:
+            source_bytes = git(args.source, "show", f"{commit}:{source_path}")
+        except subprocess.CalledProcessError:
+            raise SystemExit(f"historical Funding snapshot {entry['id']}: {source_path} does not exist at {commit}") from None
+        blob = git_blob_sha(source_bytes)
+        if entry["source_git_blob_sha"] != blob or entry["publication_git_blob_sha"] != blob:
+            raise SystemExit(f"historical Funding snapshot {entry['id']} blob differs from {source_path} at {commit}")
+        file = single_file(routes, path_of(version_iri), immutable=True)
+        if file != entry["versioned_publication_path"] or file in expected or file in historical:
+            raise SystemExit(f"historical Funding snapshot {entry['id']} route does not serve only its own snapshot file")
+        if (ROOT / file).read_bytes() != source_bytes:
+            raise SystemExit(f"{file} is not byte-for-byte {source_path} at {commit}")
+        historical[file] = f"{commit}:{source_path}"
+
     # No machine-readable representation behind a Funding URL may escape the comparison.
     for route in routes.values():
         surfaces = [route["path"], *route.get("aliases", [])]
@@ -167,14 +234,16 @@ def main() -> None:
         for representation in route.get("representations", []):
             if representation["media_type"].startswith("text/html"):
                 continue
-            if representation["file"] not in expected:
-                raise SystemExit(f"{route['path']} serves {representation['file']}, which is not exporter output")
+            if representation["file"] not in expected and representation["file"] not in historical:
+                raise SystemExit(f"{route['path']} serves {representation['file']}, which is neither exporter output nor a verified historical version")
 
     for id_file, output_path in sorted(expected.items()):
         if (ROOT / id_file).read_bytes() != (exported / output_path).read_bytes():
             raise SystemExit(f"{id_file} is not byte-for-byte the exporter output {output_path}")
 
     print(f"Funding publication verified: {len(expected)} representations equal the owner exporter output at {pin}")
+    for id_file, origin in sorted(historical.items()):
+        print(f"Historical Funding version verified: {id_file} equals {origin}")
 
 
 if __name__ == "__main__":
