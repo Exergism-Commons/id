@@ -1,0 +1,20 @@
+{
+  "@context": "https://id.exergism.org/context/funding/0.2.0-pre1",
+  "@id": "https://id.exergism.org/funding/id/ECF-OPP-MSCA-PF-2027",
+  "@type": "FundingOpportunity",
+  "id": "ECF-OPP-MSCA-PF-2027",
+  "title": "MSCA Postdoctoral Fellowships 2027",
+  "status": "forthcoming",
+  "provenance": "data/opportunities.yaml#msca-pf-2027",
+  "rankEligible": true,
+  "fit": 0.93,
+  "fundingValue": 0.86,
+  "capabilityValue": 1.0,
+  "strategicOptionality": 0.96,
+  "autonomyValue": 0.85,
+  "networkValue": 0.9,
+  "recurrence": 0.7,
+  "captureRisk": 0.08,
+  "adminCost": 0.65,
+  "executionRisk": 0.62
+}
