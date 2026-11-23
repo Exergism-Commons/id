@@ -22,10 +22,26 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
-          cache: pip
-          cache-dependency-path: requirements-semantic.txt
-      - name: Install semantic catalog audit tooling
-        run: python -m pip install -r requirements-semantic.txt
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Exergism-Commons/funding
+          ref: 00a11736330d3d8d8f8a492497f470a66e667cdb
+          path: funding-source
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify the pinned Funding source is adopted on funding main
+        run: git -C funding-source merge-base --is-ancestor 00a11736330d3d8d8f8a492497f470a66e667cdb origin/main
+      - name: Install semantic and Funding publication tooling
+        run: python -m pip install -r requirements-semantic.txt -r funding-source/requirements-ontology.txt
+      - name: Verify Funding 0.2 candidate remains unregistered
+        run: python3 tools/validate_funding_candidate.py --source-commit 00a11736330d3d8d8f8a492497f470a66e667cdb
+      - name: Rebuild and compare owner-authored Funding publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/funding-publication
+          python funding-source/tools/export_publication.py --output-dir /tmp/funding-publication
+          diff -ru /tmp/funding-publication staging/funding/0.2.0-pre1/publication
       - name: Establish trusted persistence boundary
         shell: bash
         env:
