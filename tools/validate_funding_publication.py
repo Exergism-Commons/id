@@ -153,21 +153,31 @@ def main() -> None:
     if ontology_output is None:
         raise SystemExit(f"exporter did not publish {OWNER_ONTOLOGY_SOURCE}")
 
-    expected: dict[str, str] = {
-        single_file(routes, path_of(publication["ontology_version_iri"]), immutable=True): ontology_output,
-        media_file(routes, path_of(publication["ontology_iri"]), "text/turtle"): ontology_output,
-    }
+    # Each explained (route, file) pair is a representation this publication
+    # accounts for; the same verified bytes under any other Funding URL are not.
+    expected: dict[str, str] = {}
+    explained: set[tuple[str, str]] = set()
+
+    def explain(path: str, file: str, output: str) -> None:
+        if expected.setdefault(file, output) != output:
+            raise SystemExit(f"{file} is claimed by two different exporter outputs")
+        explained.add((path, file))
+
+    version_path = path_of(publication["ontology_version_iri"])
+    explain(version_path, single_file(routes, version_path, immutable=True), ontology_output)
+    for path in (path_of(publication["ontology_iri"]), path_of(publication["vocabulary_namespace"].rstrip("#"))):
+        explain(path, media_file(routes, path, "text/turtle"), ontology_output)
     legacy_output = None
     for role, iri in publication["contexts"].items():
         output = f"contexts/funding-context-{iri.rsplit('/', 1)[1]}.jsonld"
         if output not in exact:
             raise SystemExit(f"{role} context {iri} has no exact exporter artifact")
-        expected[single_file(routes, path_of(iri), immutable=True)] = output
+        explain(path_of(iri), single_file(routes, path_of(iri), immutable=True), output)
         if role == "legacy":
             legacy_output = output
     if legacy_output is None:
         raise SystemExit("publication must declare the legacy context")
-    expected[single_file(routes, LEGACY_CONTEXT_ALIAS, immutable=True)] = legacy_output
+    explain(LEGACY_CONTEXT_ALIAS, single_file(routes, LEGACY_CONTEXT_ALIAS, immutable=True), legacy_output)
 
     published_ids = set()
     for iri in publication["records"]:
@@ -175,7 +185,7 @@ def main() -> None:
         if stable_id not in records:
             raise SystemExit(f"published record {iri} is not produced by the exporter")
         published_ids.add(stable_id)
-        expected[media_file(routes, path_of(iri), "application/ld+json")] = records[stable_id]["output_path"]
+        explain(path_of(iri), media_file(routes, path_of(iri), "application/ld+json"), records[stable_id]["output_path"])
     if published_ids != set(records):
         raise SystemExit(f"exporter records not published: {sorted(set(records) - published_ids)}")
     registered_ids = {path.rsplit("/", 1)[1] for path in routes if path.startswith("/funding/id/")}
@@ -224,8 +234,10 @@ def main() -> None:
         if (ROOT / file).read_bytes() != source_bytes:
             raise SystemExit(f"{file} is not byte-for-byte {source_path} at {commit}")
         historical[file] = f"{commit}:{source_path}"
+        explained.add((path_of(version_iri), file))
 
-    # No machine-readable representation behind a Funding URL may escape the comparison.
+    # No machine-readable representation behind a Funding URL may escape the
+    # comparison, nor reuse verified bytes under a route nobody declared.
     for route in routes.values():
         surfaces = [route["path"], *route.get("aliases", [])]
         surfaces += [rep["public_path"] for rep in route.get("representations", []) if rep.get("public_path")]
@@ -234,8 +246,8 @@ def main() -> None:
         for representation in route.get("representations", []):
             if representation["media_type"].startswith("text/html"):
                 continue
-            if representation["file"] not in expected and representation["file"] not in historical:
-                raise SystemExit(f"{route['path']} serves {representation['file']}, which is neither exporter output nor a verified historical version")
+            if (route["path"], representation["file"]) not in explained:
+                raise SystemExit(f"{route['path']} serves {representation['file']}, which this publication does not declare for that route")
 
     for id_file, output_path in sorted(expected.items()):
         if (ROOT / id_file).read_bytes() != (exported / output_path).read_bytes():
