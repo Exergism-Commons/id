@@ -16,22 +16,18 @@
   <h1><code>funding#</code></h1>
   <p class="lede">Human-readable documentation for <code>https://id.exergism.org/funding#</code>. Open a term IRI such as <a href="/funding#InstitutionalFundingState"><code>funding#InstitutionalFundingState</code></a> to inspect the RDF facts published for that term.</p>
 
-  <div class="panel status"><strong>Adopted namespace.</strong> Funding defines the semantics; <code>id.exergism.org</code> provides stable identity and resolution. The current ontology identifies itself as <code>0.1.0-draft</code>.</div>
+  <div class="panel status"><strong>Adopted namespace.</strong> Funding defines the semantics; <code>id.exergism.org</code> provides stable identity and resolution. The current ontology identifies itself as <code>0.2.0-pre1</code> (<a href="/ontology/funding/0.2.0-pre1"><code>https://id.exergism.org/ontology/funding/0.2.0-pre1</code></a>) and is published byte-for-byte from <a href="https://github.com/Exergism-Commons/funding/commit/00a11736330d3d8d8f8a492497f470a66e667cdb"><code>funding@00a11736…</code></a>. Shared identity, provenance and institutional governance terms are reused from <a href="/commons"><code>commons#</code></a> and <a href="/governance"><code>governance#</code></a> rather than declared here.</div>
 
-  <p><a href="/ontology/funding">Ontology document</a> · <a href="/representations/funding.owl.ttl">Turtle</a> · <a href="/representations/funding-context.jsonld">JSON-LD context</a> · <a href="/funding/id/">Published record IDs</a> · <a href="https://funding.exergism.org/">Funding website</a> · <a href="https://github.com/Exergism-Commons/funding">Authoritative repository</a></p>
+  <p><a href="/ontology/funding">Ontology document</a> · <a href="/representations/funding.owl.ttl">Turtle</a> · <a href="/ontology/funding/0.2.0-pre1">0.2.0-pre1 version</a> · <a href="/context/funding/0.2.0-pre1">JSON-LD context 0.2.0-pre1</a> · <a href="/context/funding/0.1.0-draft">Legacy JSON-LD context 0.1.0-draft</a> · <a href="/funding/id/">Published record IDs</a> · <a href="https://funding.exergism.org/">Funding website</a> · <a href="https://github.com/Exergism-Commons/funding">Authoritative repository</a></p>
 
   <div class="vocabulary-layout">
     <nav class="vocabulary-index" aria-label="Funding vocabulary terms">
       <h2>Classes</h2>
       <ul class="terms">
-        <li id="GovernanceRecord"><a href="/funding#GovernanceRecord"><code>GovernanceRecord</code></a></li>
         <li id="FundingOpportunity"><a href="/funding#FundingOpportunity"><code>FundingOpportunity</code></a></li>
-        <li id="GovernanceDecision"><a href="/funding#GovernanceDecision"><code>GovernanceDecision</code></a></li>
         <li id="FundingAcceptanceDecision"><a href="/funding#FundingAcceptanceDecision"><code>FundingAcceptanceDecision</code></a></li>
         <li id="CompensationDecision"><a href="/funding#CompensationDecision"><code>CompensationDecision</code></a></li>
         <li id="EndowmentPrincipalWithdrawalDecision"><a href="/funding#EndowmentPrincipalWithdrawalDecision"><code>EndowmentPrincipalWithdrawalDecision</code></a></li>
-        <li id="Vote"><a href="/funding#Vote"><code>Vote</code></a></li>
-        <li id="ConflictDisclosure"><a href="/funding#ConflictDisclosure"><code>ConflictDisclosure</code></a></li>
         <li id="DiversificationPlan"><a href="/funding#DiversificationPlan"><code>DiversificationPlan</code></a></li>
         <li id="InstitutionalFundingState"><a href="/funding#InstitutionalFundingState"><code>InstitutionalFundingState</code></a></li>
         <li id="FundingPhaseState"><a href="/funding#FundingPhaseState"><code>FundingPhaseState</code></a></li>
@@ -41,23 +37,11 @@
         <li id="DiversifiedState"><a href="/funding#DiversifiedState"><code>DiversifiedState</code></a></li>
         <li id="ElevatedConcentrationState"><a href="/funding#ElevatedConcentrationState"><code>ElevatedConcentrationState</code></a></li>
         <li id="StrategicDependencyState"><a href="/funding#StrategicDependencyState"><code>StrategicDependencyState</code></a></li>
-        <li id="Actor"><a href="/funding#Actor"><code>Actor</code></a></li>
-        <li id="Person"><a href="/funding#Person"><code>Person</code></a></li>
-        <li id="Organization"><a href="/funding#Organization"><code>Organization</code></a></li>
         <li id="Funder"><a href="/funding#Funder"><code>Funder</code></a></li>
       </ul>
 
       <h2>Properties</h2>
       <ul class="terms">
-        <li id="stableId"><a href="/funding#stableId"><code>stableId</code></a></li>
-        <li id="title"><a href="/funding#title"><code>title</code></a></li>
-        <li id="status"><a href="/funding#status"><code>status</code></a></li>
-        <li id="decisionDate"><a href="/funding#decisionDate"><code>decisionDate</code></a></li>
-        <li id="rationale"><a href="/funding#rationale"><code>rationale</code></a></li>
-        <li id="approvalClass"><a href="/funding#approvalClass"><code>approvalClass</code></a></li>
-        <li id="provenance"><a href="/funding#provenance"><code>provenance</code></a></li>
-        <li id="supersedes"><a href="/funding#supersedes"><code>supersedes</code></a></li>
-        <li id="reviewDue"><a href="/funding#reviewDue"><code>reviewDue</code></a></li>
         <li id="funder"><a href="/funding#funder"><code>funder</code></a></li>
         <li id="opportunity"><a href="/funding#opportunity"><code>opportunity</code></a></li>
         <li id="amount"><a href="/funding#amount"><code>amount</code></a></li>
@@ -74,6 +58,11 @@
         <li id="adminCost"><a href="/funding#adminCost"><code>adminCost</code></a></li>
         <li id="executionRisk"><a href="/funding#executionRisk"><code>executionRisk</code></a></li>
         <li id="rankEligible"><a href="/funding#rankEligible"><code>rankEligible</code></a></li>
+        <li id="rolling24MonthTotalIncomeAfter"><a href="/funding#rolling24MonthTotalIncomeAfter"><code>rolling24MonthTotalIncomeAfter</code></a></li>
+        <li id="rolling24MonthSingleFunderIncomeAfter"><a href="/funding#rolling24MonthSingleFunderIncomeAfter"><code>rolling24MonthSingleFunderIncomeAfter</code></a></li>
+        <li id="concentrationWindowEnd"><a href="/funding#concentrationWindowEnd"><code>concentrationWindowEnd</code></a></li>
+        <li id="concentrationEvidencePath"><a href="/funding#concentrationEvidencePath"><code>concentrationEvidencePath</code></a></li>
+        <li id="concentrationEvidenceSha256"><a href="/funding#concentrationEvidenceSha256"><code>concentrationEvidenceSha256</code></a></li>
         <li id="singleFunderConcentrationAfter"><a href="/funding#singleFunderConcentrationAfter"><code>singleFunderConcentrationAfter</code></a></li>
         <li id="governanceRightGranted"><a href="/funding#governanceRightGranted"><code>governanceRightGranted</code></a></li>
         <li id="ecWideIpOwnershipGranted"><a href="/funding#ecWideIpOwnershipGranted"><code>ecWideIpOwnershipGranted</code></a></li>
@@ -81,18 +70,42 @@
         <li id="diversificationPlan"><a href="/funding#diversificationPlan"><code>diversificationPlan</code></a></li>
         <li id="institutionalPhase"><a href="/funding#institutionalPhase"><code>institutionalPhase</code></a></li>
         <li id="dependencyState"><a href="/funding#dependencyState"><code>dependencyState</code></a></li>
+        <li id="planOwner"><a href="/funding#planOwner"><code>planOwner</code></a></li>
+        <li id="planAction"><a href="/funding#planAction"><code>planAction</code></a></li>
+        <li id="targetDate"><a href="/funding#targetDate"><code>targetDate</code></a></li>
         <li id="beneficiary"><a href="/funding#beneficiary"><code>beneficiary</code></a></li>
         <li id="workBasis"><a href="/funding#workBasis"><code>workBasis</code></a></li>
         <li id="compensationAmount"><a href="/funding#compensationAmount"><code>compensationAmount</code></a></li>
-        <li id="conflictDisclosure"><a href="/funding#conflictDisclosure"><code>conflictDisclosure</code></a></li>
-        <li id="interestedParty"><a href="/funding#interestedParty"><code>interestedParty</code></a></li>
-        <li id="hasVote"><a href="/funding#hasVote"><code>hasVote</code></a></li>
-        <li id="voter"><a href="/funding#voter"><code>voter</code></a></li>
-        <li id="voteValue"><a href="/funding#voteValue"><code>voteValue</code></a></li>
         <li id="principalWithdrawalAmount"><a href="/funding#principalWithdrawalAmount"><code>principalWithdrawalAmount</code></a></li>
         <li id="exceptionalCondition"><a href="/funding#exceptionalCondition"><code>exceptionalCondition</code></a></li>
         <li id="endowmentPurpose"><a href="/funding#endowmentPurpose"><code>endowmentPurpose</code></a></li>
-        <li id="membershipEconomicShare"><a href="/funding#membershipEconomicShare"><code>membershipEconomicShare</code></a></li>
+      </ul>
+
+      <h2>Historical 0.1.0-draft terms</h2>
+      <p class="muted">Declared only by Funding <code>0.1.0-draft</code>. Records published with the frozen <a href="/context/funding/0.1.0-draft">0.1.0-draft context</a> still expand to these IRIs.</p>
+      <ul class="terms">
+        <li id="GovernanceRecord" data-historical-term><a href="/funding#GovernanceRecord"><code>GovernanceRecord</code></a></li>
+        <li id="GovernanceDecision" data-historical-term><a href="/funding#GovernanceDecision"><code>GovernanceDecision</code></a></li>
+        <li id="Vote" data-historical-term><a href="/funding#Vote"><code>Vote</code></a></li>
+        <li id="ConflictDisclosure" data-historical-term><a href="/funding#ConflictDisclosure"><code>ConflictDisclosure</code></a></li>
+        <li id="Actor" data-historical-term><a href="/funding#Actor"><code>Actor</code></a></li>
+        <li id="Person" data-historical-term><a href="/funding#Person"><code>Person</code></a></li>
+        <li id="Organization" data-historical-term><a href="/funding#Organization"><code>Organization</code></a></li>
+        <li id="stableId" data-historical-term><a href="/funding#stableId"><code>stableId</code></a></li>
+        <li id="title" data-historical-term><a href="/funding#title"><code>title</code></a></li>
+        <li id="status" data-historical-term><a href="/funding#status"><code>status</code></a></li>
+        <li id="decisionDate" data-historical-term><a href="/funding#decisionDate"><code>decisionDate</code></a></li>
+        <li id="rationale" data-historical-term><a href="/funding#rationale"><code>rationale</code></a></li>
+        <li id="approvalClass" data-historical-term><a href="/funding#approvalClass"><code>approvalClass</code></a></li>
+        <li id="provenance" data-historical-term><a href="/funding#provenance"><code>provenance</code></a></li>
+        <li id="supersedes" data-historical-term><a href="/funding#supersedes"><code>supersedes</code></a></li>
+        <li id="reviewDue" data-historical-term><a href="/funding#reviewDue"><code>reviewDue</code></a></li>
+        <li id="conflictDisclosure" data-historical-term><a href="/funding#conflictDisclosure"><code>conflictDisclosure</code></a></li>
+        <li id="interestedParty" data-historical-term><a href="/funding#interestedParty"><code>interestedParty</code></a></li>
+        <li id="hasVote" data-historical-term><a href="/funding#hasVote"><code>hasVote</code></a></li>
+        <li id="voter" data-historical-term><a href="/funding#voter"><code>voter</code></a></li>
+        <li id="voteValue" data-historical-term><a href="/funding#voteValue"><code>voteValue</code></a></li>
+        <li id="membershipEconomicShare" data-historical-term><a href="/funding#membershipEconomicShare"><code>membershipEconomicShare</code></a></li>
       </ul>
     </nav>
 

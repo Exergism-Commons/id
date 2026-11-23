@@ -33,6 +33,8 @@ The repository uses GitHub Actions by immutable commit SHA, including `actions/c
 
 The semantic-catalog completeness audit additionally installs RDFLib from the exact upstream Git commit recorded in `requirements-semantic.txt`. RDFLib and its Python dependency closure are CI-only validation tooling: they are not vendored into this repository, embedded in the Go resolver, included in runtime release assets, or installed by the production bootstrap. Their role is deliberately independent of the text-based term-catalog generator so CI can detect catalog omissions caused by Turtle formatting changes.
 
+The Funding publication provenance check also installs the requirements pinned by the checked-out Funding source commit (`requirements-ontology.txt`: RDFLib, pySHACL, PyYAML) in order to run Funding's own exporter. They are likewise CI-only and are not vendored, embedded, released or installed on the production host.
+
 ## Operating-system packages
 
 The setup script installs packages from the selected Debian/Ubuntu repositories. Those packages are not copied into this repository and remain governed by their distribution/upstream licences. A redistributed VM image or appliance must separately account for the licences of the packages actually included in that image.
@@ -49,7 +51,7 @@ At this audit date, `Exergism-Commons/governance` does **not** contain an explic
 
 ### Funding
 
-Funding representations originate from `Exergism-Commons/funding`. At this audit date, that repository likewise does **not** contain an explicit root `LICENSE` granting general downstream redistribution rights. Public availability on GitHub and dereferencing through `id.exergism.org` do not themselves create such a grant.
+Funding representations originate from `Exergism-Commons/funding`. The Funding ontology, JSON-LD contexts and record representations are the output of that repository's own publication exporter at source commit `00a11736330d3d8d8f8a492497f470a66e667cdb`; CI checks out that commit, reruns the exporter and verifies the published bytes. At this audit date, that repository likewise does **not** contain an explicit root `LICENSE` granting general downstream redistribution rights (the pinned commit has none either). Public availability on GitHub and dereferencing through `id.exergism.org` do not themselves create such a grant.
 
 Until the relevant owning repositories adopt an explicit content/software licensing policy and contributor-rights basis, `id` should limit itself to EC-controlled publication/dereferencing and should preserve exact source provenance. Third-party redistribution bundles must not claim permissions that the owner repositories have not granted.
 

@@ -6,13 +6,13 @@ This directory separates two machine-readable concerns from the HTTP route regis
 
 - `namespaces.json` records namespace ownership, canonical ontology and version IRIs, migration state, imports and authoritative source locations.
 - `terms.json` is a **generated discoverability projection**. A catalog entry never creates a term and never overrides the ontology in the owning repository.
-- `ontology-snapshots.json` binds published owner-authored semantic artifacts to their source repository commit and Git blob identity.
+- `ontology-snapshots.json` binds published owner-authored semantic artifacts to their source repository commit and Git blob identity. Its top-level `source_repository`/`source_commit` apply to Governance-owned entries; entries from another owner (Funding's ontology and JSON-LD contexts) declare their own pair.
 
 ## Generated term catalog
 
-For adopted Commons/Governance namespaces, `terms.json` is generated deterministically by `tools/generate_term_catalog.py` from the exact Turtle representations already provenance-bound to `Exergism-Commons/governance`. Each indexed term carries its IRI, local name, label, RDF type, owner/source metadata, ontology version, dependencies, lifecycle status and mappings field.
+For adopted namespaces, `terms.json` is generated deterministically by `tools/generate_term_catalog.py` from the exact Turtle representations already provenance-bound to their owner: Commons/Governance to `Exergism-Commons/governance`, Funding to `Exergism-Commons/funding`. Each indexed term carries its IRI, local name, label, RDF type, owner/source metadata, ontology version, dependencies, lifecycle status and mappings field.
 
-Do not edit generated Commons/Governance term entries by hand. Run:
+Do not edit generated term entries by hand. Run:
 
 ```sh
 python3 tools/generate_term_catalog.py
