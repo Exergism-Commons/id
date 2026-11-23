@@ -99,6 +99,8 @@ Owner-authored immutable version IRIs currently published by this branch are:
 - `https://id.exergism.org/ontology/governance/0.1-PRE2`
 - `https://id.exergism.org/ontology/funding/0.2.0-pre1`
 
+The Funding `0.1.0-draft` ontology predates `owl:versionIRI`; its unchanged owner bytes stay available at the immutable historical version `https://id.exergism.org/ontology/funding/0.1.0-draft`.
+
 The current Governance downstream authority profile is:
 
 - `https://id.exergism.org/governance/profile/0.1-DRAFT`

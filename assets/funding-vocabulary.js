@@ -14,6 +14,7 @@
   const TTL_PUBLIC_URL = "/representations/funding.owl.ttl";
   const CONTEXT_URL = "/context/funding/0.2.0-pre1";
   const LEGACY_CONTEXT_URL = "/context/funding/0.1.0-draft";
+  const LEGACY_VERSION_URL = "/ontology/funding/0.1.0-draft";
   const SOURCE_URL = "https://github.com/Exergism-Commons/funding/blob/main/ontology/funding.owl.ttl";
   // Namespace documents for the prefixes used by the published ontology.
   const PREFIX_DOCUMENTS = [["ecf:", "/funding#"], ["ecg:", "/governance#"], ["ec:", "/commons#"]];
@@ -181,7 +182,7 @@
       : `<li>JSON-LD key <code>${escapeHtml(key)}</code>: not defined by the current <a href="${CONTEXT_URL}">0.2.0-pre1 context</a>.</li>`);
 
     let rows = row("IRI", `<a class="iri" href="${escapeHtml(iri)}"><code>${escapeHtml(iri)}</code></a>`)
-      + row("Status", `Declared by Funding <code>0.1.0-draft</code>; not declared by the current <a href="${VERSION_URL}"><code>0.2.0-pre1</code></a> ontology.`)
+      + row("Status", `Declared by Funding <a href="${LEGACY_VERSION_URL}"><code>0.1.0-draft</code></a>; not declared by the current <a href="${VERSION_URL}"><code>0.2.0-pre1</code></a> ontology.`)
       + row("Legacy context", `Records published with the frozen <a href="${LEGACY_CONTEXT_URL}">0.1.0-draft JSON-LD context</a> still expand to this IRI.`);
     if (keys.length) rows += row("Current context", `<ul>${keys.join("")}</ul>`);
     rows += row("Source", `<a href="https://github.com/Exergism-Commons/funding">Exergism-Commons/funding</a>`);

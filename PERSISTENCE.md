@@ -89,6 +89,8 @@ Current adopted examples are:
 
 The Governance PRE2 artifact imports the Commons PRE2 `owl:versionIRI`, and Funding 0.2.0-pre1 imports both PRE2 version IRIs, so their published OWL import closures are reproducible without the resolver modifying owner-authored bytes.
 
+Funding's earlier ontology, `owl:versionInfo "0.1.0-draft"`, predates `owl:versionIRI`. Its exact owner bytes — those served at `https://id.exergism.org/ontology/funding` until 0.2.0-pre1 — remain available, unchanged, at the immutable historical version `https://id.exergism.org/ontology/funding/0.1.0-draft`, so the terms used by records under the frozen 0.1.0-draft context stay dereferenceable. That IRI is assigned by this service to those bytes; the bytes themselves do not declare it, and `catalog/ontology-snapshots.json` records this as `owner_declares_version_iri: false`.
+
 Intended equivalent patterns for migrating domains are:
 
 - Exergism: `https://id.exergism.org/ontology/exergism/{version}`
@@ -112,7 +114,7 @@ At minimum a publication manifest records:
 
 CI fetches the authoritative owner commit and verifies source blob == manifest == published bytes. `id` MUST NOT repair, rewrite or closure-freeze another repository's ontology locally; such semantic changes belong in the owning repository first.
 
-Funding has adopted such a derived-artifact contract: its own `tools/export_publication.py`. The exporter copies the ontology and both JSON-LD contexts unchanged (recorded with transformation `none` and their source blobs in `catalog/ontology-snapshots.json`) and derives the record JSON-LD. CI checks out the pinned Funding commit, proves it is on Funding `main`, reruns the exporter and requires every published Funding representation — versioned and current ontology, contexts, historical context alias and records — to equal its output byte for byte. `id` never edits a Funding representation by hand.
+Funding has adopted such a derived-artifact contract: its own `tools/export_publication.py`. The exporter copies the ontology and both JSON-LD contexts unchanged (recorded with transformation `none` and their source blobs in `catalog/ontology-snapshots.json`) and derives the record JSON-LD. CI checks out the pinned Funding commit, proves it is on Funding `main`, reruns the exporter and requires every published Funding representation — versioned and current ontology, contexts, historical context alias and records — to equal its output byte for byte. A historical Funding ontology version is instead recorded with its own older source commit; CI requires that commit to be an ancestor of the pin and of Funding `main`, and the published bytes to equal the owner blob at that commit. `id` never edits a Funding representation by hand.
 
 ## 7. No retroactive namespace rewriting
 
