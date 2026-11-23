@@ -2,8 +2,9 @@
 """Generate/verify the semantic term discovery catalog from published owner bytes.
 
 The catalog is a discoverability projection only. This script deliberately does
-not invent semantics: it extracts declarations from the exact Commons and
-Governance Turtle representations already provenance-bound to the owner repo.
+not invent semantics: it extracts declarations from the exact Commons,
+Governance and Funding Turtle representations already provenance-bound to their
+owner repositories.
 """
 
 from __future__ import annotations
@@ -16,13 +17,16 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "catalog" / "terms.json"
-SOURCE_COMMIT = "517c0df4c905c79ec2b2824231b40ccaa6a1b510"
+GOVERNANCE_SOURCE_COMMIT = "517c0df4c905c79ec2b2824231b40ccaa6a1b510"
+FUNDING_SOURCE_COMMIT = "00a11736330d3d8d8f8a492497f470a66e667cdb"
 
 NAMESPACES = {
     "commons": {
         "prefix": "ec",
         "iri_prefix": "https://id.exergism.org/commons#",
         "path": ROOT / "representations" / "commons.ttl",
+        "owner_repository": "Exergism-Commons/governance",
+        "source_commit": GOVERNANCE_SOURCE_COMMIT,
         "source_path": "ontology/commons.ttl",
         "dependencies": [],
     },
@@ -30,12 +34,23 @@ NAMESPACES = {
         "prefix": "ecg",
         "iri_prefix": "https://id.exergism.org/governance#",
         "path": ROOT / "representations" / "governance.ttl",
+        "owner_repository": "Exergism-Commons/governance",
+        "source_commit": GOVERNANCE_SOURCE_COMMIT,
         "source_path": "ontology/governance.ttl",
         "dependencies": ["commons"],
     },
+    "funding": {
+        "prefix": "ecf",
+        "iri_prefix": "https://id.exergism.org/funding#",
+        "path": ROOT / "representations" / "funding.owl.ttl",
+        "owner_repository": "Exergism-Commons/funding",
+        "source_commit": FUNDING_SOURCE_COMMIT,
+        "source_path": "ontology/funding.owl.ttl",
+        "dependencies": ["commons", "governance"],
+    },
 }
 
-DECLARATION = re.compile(r"^(?P<term>(?:ec|ecg):[A-Za-z0-9_-]+)\s+a\s+(?P<type>[^;.,\s]+)")
+DECLARATION = re.compile(r"^(?P<term>(?:ec|ecg|ecf):[A-Za-z0-9_-]+)\s+a\s+(?P<type>[^;.,\s]+)")
 LABEL = re.compile(r'rdfs:label\s+"(?P<label>[^"]+)"(?:@[A-Za-z-]+)?')
 VERSION = re.compile(r'owl:versionInfo\s+"(?P<version>[^"]+)"')
 
@@ -83,9 +98,9 @@ def parse_namespace(namespace_id: str, config: dict) -> dict:
 
     terms.sort(key=lambda item: item["iri"])
     return {
-        "owner_repository": "Exergism-Commons/governance",
+        "owner_repository": config["owner_repository"],
         "source_path": config["source_path"],
-        "source_commit": SOURCE_COMMIT,
+        "source_commit": config["source_commit"],
         "ontology_version": version,
         "dependencies": config["dependencies"],
         "terms": terms,
@@ -99,10 +114,6 @@ def generate() -> dict:
     }
     namespaces.update(
         {
-            "funding": {
-                "status": "deferred-to-authoritative-publication",
-                "reason": "Funding PR #8 is still normalizing ownership against commons/governance; index after the owning source lands.",
-            },
             "exergism": {
                 "status": "pending-canonical-migration",
                 "reason": "Do not index legacy exergia.org IRIs as canonical id.exergism.org terms.",

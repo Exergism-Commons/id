@@ -16,22 +16,45 @@ func gitBlobSHA(data []byte) string {
 }
 
 type ontologySnapshotCatalog struct {
+    SchemaVersion    int    `json:"schema_version"`
     SourceRepository string `json:"source_repository"`
     SourceCommit     string `json:"source_commit"`
     Snapshots []struct {
-        ID                       string `json:"id"`
-        VersionIRI               string `json:"version_iri"`
-        ProfileIRI               string `json:"profile_iri"`
-        SourcePath               string `json:"source_path"`
-        SourceGitBlobSHA         string `json:"source_git_blob_sha"`
-        CurrentPublicationPath   string `json:"current_publication_path"`
-        VersionedPublicationPath string `json:"versioned_publication_path"`
-        PublicationGitBlobSHA    string `json:"publication_git_blob_sha"`
-        PublicationTransform     string `json:"publication_transform"`
+        ID                             string `json:"id"`
+        SourceRepository               string `json:"source_repository"`
+        SourceCommit                   string `json:"source_commit"`
+        VersionIRI                     string `json:"version_iri"`
+        OwnerDeclaresVersionIRI        *bool  `json:"owner_declares_version_iri"`
+        ProfileIRI                     string `json:"profile_iri"`
+        ContextIRI                     string `json:"context_iri"`
+        SourcePath                     string `json:"source_path"`
+        SourceGitBlobSHA               string `json:"source_git_blob_sha"`
+        CurrentPublicationPath         string `json:"current_publication_path"`
+        HistoricalAliasPublicationPath string `json:"historical_alias_publication_path"`
+        VersionedPublicationPath       string `json:"versioned_publication_path"`
+        PublicationGitBlobSHA          string `json:"publication_git_blob_sha"`
+        PublicationTransform           string `json:"publication_transform"`
     } `json:"snapshots"`
 }
 
-func TestGovernancePublicationBytesMatchManifestWithoutTransformation(t *testing.T) {
+// Owner source commits pinned by the provenance workflows. Repinning an owner
+// is a reviewed change to this map, the catalog and the matching workflow.
+var pinnedOwnerSourceCommits = map[string]string{
+    "Exergism-Commons/governance": "517c0df4c905c79ec2b2824231b40ccaa6a1b510",
+    "Exergism-Commons/funding":    "00a11736330d3d8d8f8a492497f470a66e667cdb",
+}
+
+// Historical ontology versions keep the exact bytes of an older owner commit,
+// which CI verifies against that commit instead of the current pin.
+var historicalSnapshotSourceCommits = map[string]string{
+    "funding-0.1.0-draft": "d9d8e79e70b441f3172082868c042c6993dd4d2a",
+}
+
+func TestOwnerPublicationBytesMatchManifestWithoutTransformation(t *testing.T) {
+    h, err := Load("../..", "../../resolver/registry.json")
+    if err != nil {
+        t.Fatal(err)
+    }
     raw, err := os.ReadFile("../../catalog/ontology-snapshots.json")
     if err != nil {
         t.Fatal(err)
@@ -40,17 +63,54 @@ func TestGovernancePublicationBytesMatchManifestWithoutTransformation(t *testing
     if err := json.Unmarshal(raw, &catalog); err != nil {
         t.Fatal(err)
     }
-    if catalog.SourceRepository != "Exergism-Commons/governance" {
-        t.Fatalf("unexpected source repository %q", catalog.SourceRepository)
+    if catalog.SchemaVersion != 2 {
+        t.Fatalf("unexpected ontology snapshot schema version %d", catalog.SchemaVersion)
     }
-    if catalog.SourceCommit != "517c0df4c905c79ec2b2824231b40ccaa6a1b510" {
+    // The top-level owner is the default; snapshots from another owner
+    // repository declare their own source_repository and source_commit.
+    if catalog.SourceRepository != "Exergism-Commons/governance" {
+        t.Fatalf("unexpected default source repository %q", catalog.SourceRepository)
+    }
+    if catalog.SourceCommit != pinnedOwnerSourceCommits[catalog.SourceRepository] {
         t.Fatalf("unexpected Governance source commit %q", catalog.SourceCommit)
     }
-    if len(catalog.Snapshots) != 3 {
-        t.Fatalf("expected Commons, Governance and downstream-authority snapshots, got %d", len(catalog.Snapshots))
+
+    expected := map[string]string{
+        "commons-0.1-PRE2":               "Exergism-Commons/governance",
+        "governance-0.1-PRE2":            "Exergism-Commons/governance",
+        "governance-authority-0.1-DRAFT": "Exergism-Commons/governance",
+        "funding-0.1.0-draft":            "Exergism-Commons/funding",
+        "funding-0.2.0-pre1":             "Exergism-Commons/funding",
+        "funding-context-0.1.0-draft":    "Exergism-Commons/funding",
+        "funding-context-0.2.0-pre1":     "Exergism-Commons/funding",
+    }
+    if len(catalog.Snapshots) != len(expected) {
+        t.Fatalf("expected %d owner snapshots, got %d", len(expected), len(catalog.Snapshots))
     }
 
     for _, snapshot := range catalog.Snapshots {
+        repository, commit := catalog.SourceRepository, catalog.SourceCommit
+        if snapshot.SourceRepository != "" || snapshot.SourceCommit != "" {
+            if snapshot.SourceRepository == "" || snapshot.SourceCommit == "" || snapshot.SourceRepository == catalog.SourceRepository {
+                t.Fatalf("snapshot %s must override both source_repository and source_commit with another owner", snapshot.ID)
+            }
+            repository, commit = snapshot.SourceRepository, snapshot.SourceCommit
+        }
+        owner, ok := expected[snapshot.ID]
+        if !ok || repository != owner {
+            t.Fatalf("unexpected snapshot %s from %q", snapshot.ID, repository)
+        }
+        delete(expected, snapshot.ID)
+        want := pinnedOwnerSourceCommits[owner]
+        if historicalCommit, ok := historicalSnapshotSourceCommits[snapshot.ID]; ok {
+            want = historicalCommit
+            if snapshot.VersionIRI == "" || snapshot.CurrentPublicationPath != "" || snapshot.HistoricalAliasPublicationPath != "" {
+                t.Fatalf("historical snapshot %s must be a versioned ontology publication only", snapshot.ID)
+            }
+        }
+        if commit != want {
+            t.Fatalf("snapshot %s source commit %q is not the expected %s commit %q", snapshot.ID, commit, owner, want)
+        }
         if snapshot.PublicationTransform != "none" {
             t.Fatalf("id must not transform semantic source bytes for %s", snapshot.ID)
         }
@@ -64,15 +124,50 @@ func TestGovernancePublicationBytesMatchManifestWithoutTransformation(t *testing
         if got := gitBlobSHA(data); got != snapshot.PublicationGitBlobSHA {
             t.Fatalf("versioned publication %s drifted: got %s want %s", snapshot.ID, got, snapshot.PublicationGitBlobSHA)
         }
-        if snapshot.CurrentPublicationPath != "" {
-            current, err := os.ReadFile("../../" + snapshot.CurrentPublicationPath)
-            if err != nil {
-                t.Fatalf("read %s: %v", snapshot.CurrentPublicationPath, err)
-            }
-            if got := gitBlobSHA(current); got != snapshot.SourceGitBlobSHA {
-                t.Fatalf("current publication %s is not the adopted source blob: got %s want %s", snapshot.ID, got, snapshot.SourceGitBlobSHA)
+        if snapshot.VersionIRI != "" {
+            if snapshot.OwnerDeclaresVersionIRI == nil || *snapshot.OwnerDeclaresVersionIRI {
+                if strings.Count(string(data), "owl:versionIRI <"+snapshot.VersionIRI+">") != 1 {
+                    t.Fatalf("snapshot %s must declare its version IRI %s exactly once", snapshot.ID, snapshot.VersionIRI)
+                }
+            } else if strings.Contains(string(data), "owl:versionIRI") {
+                t.Fatalf("snapshot %s is recorded as predating owl:versionIRI but declares one", snapshot.ID)
             }
         }
+        for _, path := range []string{snapshot.CurrentPublicationPath, snapshot.HistoricalAliasPublicationPath} {
+            if path == "" {
+                continue
+            }
+            current, err := os.ReadFile("../../" + path)
+            if err != nil {
+                t.Fatalf("read %s: %v", path, err)
+            }
+            if got := gitBlobSHA(current); got != snapshot.SourceGitBlobSHA {
+                t.Fatalf("publication %s of %s is not the adopted source blob: got %s want %s", path, snapshot.ID, got, snapshot.SourceGitBlobSHA)
+            }
+        }
+
+        identities := 0
+        var identity string
+        for _, iri := range []string{snapshot.VersionIRI, snapshot.ProfileIRI, snapshot.ContextIRI} {
+            if iri != "" {
+                identities++
+                identity = iri
+            }
+        }
+        if identities != 1 {
+            t.Fatalf("snapshot %s must declare exactly one version, profile or context IRI", snapshot.ID)
+        }
+        route, ok := h.routes[strings.TrimPrefix(identity, "https://id.exergism.org")]
+        if !ok {
+            t.Fatalf("snapshot %s identity %s is not registered", snapshot.ID, identity)
+        }
+        if !strings.Contains(strings.ToLower(route.CacheControl), "immutable") ||
+            len(route.Representations) != 1 || route.Representations[0].File != snapshot.VersionedPublicationPath {
+            t.Fatalf("snapshot %s identity %s must be an immutable route serving only %s", snapshot.ID, identity, snapshot.VersionedPublicationPath)
+        }
+    }
+    if len(expected) != 0 {
+        t.Fatalf("missing owner snapshots: %v", expected)
     }
 }
 

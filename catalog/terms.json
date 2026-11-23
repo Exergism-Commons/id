@@ -164,8 +164,475 @@
       "status": "pending-canonical-migration"
     },
     "funding": {
-      "reason": "Funding PR #8 is still normalizing ownership against commons/governance; index after the owning source lands.",
-      "status": "deferred-to-authoritative-publication"
+      "dependencies": [
+        "commons",
+        "governance"
+      ],
+      "ontology_version": "0.2.0-pre1",
+      "owner_repository": "Exergism-Commons/funding",
+      "source_commit": "00a11736330d3d8d8f8a492497f470a66e667cdb",
+      "source_path": "ontology/funding.owl.ttl",
+      "terms": [
+        {
+          "description": "BootstrapState in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#BootstrapState",
+          "label": "BootstrapState",
+          "local_name": "BootstrapState",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "CompensationDecision in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#CompensationDecision",
+          "label": "CompensationDecision",
+          "local_name": "CompensationDecision",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "DiversificationPlan in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#DiversificationPlan",
+          "label": "DiversificationPlan",
+          "local_name": "DiversificationPlan",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "DiversifiedState in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#DiversifiedState",
+          "label": "DiversifiedState",
+          "local_name": "DiversifiedState",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "ElevatedConcentrationState in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#ElevatedConcentrationState",
+          "label": "ElevatedConcentrationState",
+          "local_name": "ElevatedConcentrationState",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "EndowmentPrincipalWithdrawalDecision in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#EndowmentPrincipalWithdrawalDecision",
+          "label": "EndowmentPrincipalWithdrawalDecision",
+          "local_name": "EndowmentPrincipalWithdrawalDecision",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "Funder in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#Funder",
+          "label": "Funder",
+          "local_name": "Funder",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "FundingAcceptanceDecision in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#FundingAcceptanceDecision",
+          "label": "FundingAcceptanceDecision",
+          "local_name": "FundingAcceptanceDecision",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "FundingDependencyState in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#FundingDependencyState",
+          "label": "FundingDependencyState",
+          "local_name": "FundingDependencyState",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "FundingOpportunity in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#FundingOpportunity",
+          "label": "FundingOpportunity",
+          "local_name": "FundingOpportunity",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "FundingPhaseState in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#FundingPhaseState",
+          "label": "FundingPhaseState",
+          "local_name": "FundingPhaseState",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "InstitutionalFundingState in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#InstitutionalFundingState",
+          "label": "InstitutionalFundingState",
+          "local_name": "InstitutionalFundingState",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "NormalState in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#NormalState",
+          "label": "NormalState",
+          "local_name": "NormalState",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "StrategicDependencyState in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#StrategicDependencyState",
+          "label": "StrategicDependencyState",
+          "local_name": "StrategicDependencyState",
+          "mappings": [],
+          "rdf_type": "owl:Class",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "adminCost in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#adminCost",
+          "label": "adminCost",
+          "local_name": "adminCost",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "amount in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#amount",
+          "label": "amount",
+          "local_name": "amount",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "autonomyValue in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#autonomyValue",
+          "label": "autonomyValue",
+          "local_name": "autonomyValue",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "beneficiary in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#beneficiary",
+          "label": "beneficiary",
+          "local_name": "beneficiary",
+          "mappings": [],
+          "rdf_type": "owl:ObjectProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "capabilityValue in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#capabilityValue",
+          "label": "capabilityValue",
+          "local_name": "capabilityValue",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "captureRisk in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#captureRisk",
+          "label": "captureRisk",
+          "local_name": "captureRisk",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "compensationAmount in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#compensationAmount",
+          "label": "compensationAmount",
+          "local_name": "compensationAmount",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "concentrationEvidencePath in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#concentrationEvidencePath",
+          "label": "concentrationEvidencePath",
+          "local_name": "concentrationEvidencePath",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "concentrationEvidenceSha256 in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#concentrationEvidenceSha256",
+          "label": "concentrationEvidenceSha256",
+          "local_name": "concentrationEvidenceSha256",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "concentrationWindowEnd in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#concentrationWindowEnd",
+          "label": "concentrationWindowEnd",
+          "local_name": "concentrationWindowEnd",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "currency in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#currency",
+          "label": "currency",
+          "local_name": "currency",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "dependencyState in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#dependencyState",
+          "label": "dependencyState",
+          "local_name": "dependencyState",
+          "mappings": [],
+          "rdf_type": "owl:ObjectProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "diversificationPlan in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#diversificationPlan",
+          "label": "diversificationPlan",
+          "local_name": "diversificationPlan",
+          "mappings": [],
+          "rdf_type": "owl:ObjectProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "ecWideIpOwnershipGranted in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#ecWideIpOwnershipGranted",
+          "label": "ecWideIpOwnershipGranted",
+          "local_name": "ecWideIpOwnershipGranted",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "endowmentPurpose in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#endowmentPurpose",
+          "label": "endowmentPurpose",
+          "local_name": "endowmentPurpose",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "exceptionalCondition in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#exceptionalCondition",
+          "label": "exceptionalCondition",
+          "local_name": "exceptionalCondition",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "exclusiveCoreInfrastructureRightGranted in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#exclusiveCoreInfrastructureRightGranted",
+          "label": "exclusiveCoreInfrastructureRightGranted",
+          "local_name": "exclusiveCoreInfrastructureRightGranted",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "executionRisk in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#executionRisk",
+          "label": "executionRisk",
+          "local_name": "executionRisk",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "fit in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#fit",
+          "label": "fit",
+          "local_name": "fit",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "funder in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#funder",
+          "label": "funder",
+          "local_name": "funder",
+          "mappings": [],
+          "rdf_type": "owl:ObjectProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "fundingValue in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#fundingValue",
+          "label": "fundingValue",
+          "local_name": "fundingValue",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "governanceRightGranted in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#governanceRightGranted",
+          "label": "governanceRightGranted",
+          "local_name": "governanceRightGranted",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "institutionalPhase in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#institutionalPhase",
+          "label": "institutionalPhase",
+          "local_name": "institutionalPhase",
+          "mappings": [],
+          "rdf_type": "owl:ObjectProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "networkValue in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#networkValue",
+          "label": "networkValue",
+          "local_name": "networkValue",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "opportunity in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#opportunity",
+          "label": "opportunity",
+          "local_name": "opportunity",
+          "mappings": [],
+          "rdf_type": "owl:ObjectProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "planAction in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#planAction",
+          "label": "planAction",
+          "local_name": "planAction",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "planOwner in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#planOwner",
+          "label": "planOwner",
+          "local_name": "planOwner",
+          "mappings": [],
+          "rdf_type": "owl:ObjectProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "principalWithdrawalAmount in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#principalWithdrawalAmount",
+          "label": "principalWithdrawalAmount",
+          "local_name": "principalWithdrawalAmount",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "rankEligible in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#rankEligible",
+          "label": "rankEligible",
+          "local_name": "rankEligible",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "recurrence in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#recurrence",
+          "label": "recurrence",
+          "local_name": "recurrence",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "restricted in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#restricted",
+          "label": "restricted",
+          "local_name": "restricted",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "rolling24MonthSingleFunderIncomeAfter in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#rolling24MonthSingleFunderIncomeAfter",
+          "label": "rolling24MonthSingleFunderIncomeAfter",
+          "local_name": "rolling24MonthSingleFunderIncomeAfter",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "rolling24MonthTotalIncomeAfter in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#rolling24MonthTotalIncomeAfter",
+          "label": "rolling24MonthTotalIncomeAfter",
+          "local_name": "rolling24MonthTotalIncomeAfter",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "singleFunderConcentrationAfter in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#singleFunderConcentrationAfter",
+          "label": "singleFunderConcentrationAfter",
+          "local_name": "singleFunderConcentrationAfter",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "strategicOptionality in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#strategicOptionality",
+          "label": "strategicOptionality",
+          "local_name": "strategicOptionality",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "targetDate in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#targetDate",
+          "label": "targetDate",
+          "local_name": "targetDate",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        },
+        {
+          "description": "workBasis in the Exergism Commons funding vocabulary.",
+          "iri": "https://id.exergism.org/funding#workBasis",
+          "label": "workBasis",
+          "local_name": "workBasis",
+          "mappings": [],
+          "rdf_type": "owl:DatatypeProperty",
+          "status": "adopted-pre-1.0"
+        }
+      ]
     },
     "governance": {
       "dependencies": [

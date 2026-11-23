@@ -78,7 +78,17 @@ jobs:
                   "https://id.exergism.org/governance/profile/0.1-DRAFT",
               ),
           }
-          snapshots = {entry["id"]: entry for entry in manifest["snapshots"]}
+          # Entries declaring another source_repository (Funding) are verified by
+          # that owner's provenance check in ci.yml, not against Governance. Every
+          # entry must still belong to an owner whose provenance CI verifies.
+          verified_owners = {manifest["source_repository"], "Exergism-Commons/funding"}
+          owners = {entry.get("source_repository", manifest["source_repository"]) for entry in manifest["snapshots"]}
+          assert owners <= verified_owners, f"snapshot entries from unverified owners: {sorted(owners - verified_owners)}"
+          snapshots = {
+              entry["id"]: entry
+              for entry in manifest["snapshots"]
+              if entry.get("source_repository", manifest["source_repository"]) == manifest["source_repository"]
+          }
           assert set(snapshots) == set(expected), f"snapshot coverage drift: {set(snapshots)}"
 
           upstream = os.environ["UPSTREAM_REPO"]
